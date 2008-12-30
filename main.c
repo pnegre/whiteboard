@@ -150,6 +150,17 @@ void draw_square(point_t *p)
 }
 
 
+void draw_cross(int x, int y)
+{
+	int x1,y1;
+	int i;
+	for(i=-5; i<=5; i++)
+		pixel(x,y+i);
+	for(i=-5; i<=5; i++)
+		pixel(x+i,y);
+}
+
+
 
 void printpoints()
 {
@@ -298,6 +309,7 @@ void update_cursor()
 	}
 }
 
+
 int main(int argc,char *argv[])
 {
 	SDL_Event e;
@@ -365,11 +377,16 @@ int main(int argc,char *argv[])
 		for (i = (int) ym1; i < (int) ym2; i++)
 			pixel(xm1,i), pixel(xm2,i);
 
+		draw_cross(
+			xm1 + (int) ( ((float) rx / (float) MAX_WII_X )*200),
+			ym2 - (int) ( ((float) ry / (float) MAX_WII_Y )*200)
+		);
+/*
 		pixel( 
 			xm1 + (int) ( ((float) rx / (float) MAX_WII_X )*200),
 			ym2 - (int) ( ((float) ry / (float) MAX_WII_Y )*200)
 		);
-
+*/
 		draw_point(&p_screen[0]);	
 		draw_point(&p_screen[1]);	
 		draw_point(&p_screen[2]);	
