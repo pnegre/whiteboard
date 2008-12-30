@@ -190,16 +190,7 @@ void do_calcs()
 		matrixSetElement(n, (float) p_screen[i].x, 0, i*2);
 		matrixSetElement(n, (float) p_screen[i].y, 0, i*2 + 1);
 	}
-/*
-	matrixSetElement(n, (float) p_screen[0].x, 0, 0);
-	matrixSetElement(n, (float) p_screen[0].y, 0, 1);
-	matrixSetElement(n, (float) p_screen[1].x, 0, 2);
-	matrixSetElement(n, (float) p_screen[1].y, 0, 3);
-	matrixSetElement(n, (float) p_screen[2].x, 0, 4);
-	matrixSetElement(n, (float) p_screen[2].y, 0, 5);
-	matrixSetElement(n, (float) p_screen[3].x, 0, 6);
-	matrixSetElement(n, (float) p_screen[3].y, 0, 7);
-*/
+
 	for (i=0; i<4; i++)
 	{
 		matrixSetElement(m, (float) p_wii[i].x, 0, i*2);
@@ -381,12 +372,7 @@ int main(int argc,char *argv[])
 			xm1 + (int) ( ((float) rx / (float) MAX_WII_X )*200),
 			ym2 - (int) ( ((float) ry / (float) MAX_WII_Y )*200)
 		);
-/*
-		pixel( 
-			xm1 + (int) ( ((float) rx / (float) MAX_WII_X )*200),
-			ym2 - (int) ( ((float) ry / (float) MAX_WII_Y )*200)
-		);
-*/
+
 		draw_point(&p_screen[0]);	
 		draw_point(&p_screen[1]);	
 		draw_point(&p_screen[2]);	
