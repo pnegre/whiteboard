@@ -27,7 +27,7 @@
 
 #include <cwiid.h>
 
-void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count, union cwiid_mesg mesg[]);
+void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count, union cwiid_mesg *m, timespec* t);
 
 #define toggle_bit(bf,b)	\
 	(bf) = ((bf) & b)		\
@@ -139,7 +139,7 @@ void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
  * The id is to distinguish between multiple wiimotes using the same callback.
  * */
 void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
-                    union cwiid_mesg mesg[])
+                    union cwiid_mesg *mesg, timespec *t)
 {
 	int i, j;
 	int valid_source;

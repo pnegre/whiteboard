@@ -29,6 +29,6 @@ for l in libs:
 
 env.Append(LIBS = ['cwiid'])
 
-env.Program('whiteboard', Glob('*.c'))
+env.Program('whiteboard', Glob('*.c*'))
 
 

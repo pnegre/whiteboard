@@ -26,7 +26,10 @@
 #include <X11/extensions/XTest.h>
 #include <X11/Xlib.h>
 #include <sys/time.h>
-#include "matrix.h"
+
+extern "C" {
+	#include "matrix.h"
+}
 
 extern int wii_connect(char *mac);
 extern void wii_disconnect();
