@@ -31,6 +31,71 @@ extern "C" {
 	#include "matrix.h"
 }
 
+
+
+
+
+class Point
+{
+	public:
+	int x, y;
+};
+
+
+class Wiimote
+{
+	protected:
+
+	typedef enum { CALIBRATED, NON_CALIBRATED } state_t;
+	state_t state;
+	Point p;
+	// Calibration data
+	float h11,h12,h13,h21,h22,h23,h31,h32;
+
+	public:
+
+	Wiimote()
+	{
+		state = NON_CALIBRATED;
+	}
+
+	void irData(int *v)
+	{
+		switch(state)
+		{
+			case (NON_CALIBRATED):
+				p.x = v[0];
+				p.y = v[1];
+				break;
+			
+			case (CALIBRATED):
+				p.x =  (int) ( ( (float)  (h11*v[0] + h12*v[1] + h13) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
+				p.y =  (int) ( ( (float)  (h21*v[0] + h22*v[1] + h23) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
+				break;
+		}
+	}
+	
+	void calibrate(float H11, float H12, float H13, float H21, float H22, float H23, float H31, float H32)
+	{
+		h11 = H11; h12 = H12; h13 = H13;
+		h21 = H21; h22 = H22; h23 = H23;
+		h31 = H31; h32 = H32;
+		state = CALIBRATED;
+	}
+
+	Point getPos()
+	{
+		return p;
+	}
+};
+
+
+Wiimote wiim;
+
+
+
+
+
 extern int wii_connect(char *mac);
 extern void wii_disconnect();
 
@@ -48,7 +113,6 @@ point_t p_wii[4];
 
 SDL_Surface *s;
 
-float h11,h12,h13,h21,h22,h23,h31,h32;
 int ready=0, can_exit = 0;
 
 int event_has_occurred = 0;
@@ -69,24 +133,9 @@ void buttonpress()
 
 void infrared_data(int *v)
 {
-	if (ready)
-	{
-		rx =  (int) ( ( (float)  (h11*v[0] + h12*v[1] + h13) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
-		ry =  (int) ( ( (float)  (h21*v[0] + h22*v[1] + h23) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
-		//printf ("-------------(%d %d) ------------\n",rx,ry);
-		event_has_occurred = 1;
-		
-		if (rx<0)       rx = 0; 
-		if (rx>=SIZEX)  rx = SIZEX-1;
-		if (ry<0)       ry = 0;
-		if (ry>=SIZEY)  ry = SIZEY-1;
-	}
-	else
-	{
-		rx = v[0]; ry = v[1];
-	}
-	
+	wiim.irData(v);
 }
+
 
 
 void read_parameters(int argc, char *argv[])
@@ -217,6 +266,8 @@ void do_calcs()
 
 	matrixInverse(m);
 	r = matrixMultiply(m,n);
+	
+	float h11,h12,h13,h21,h22,h23,h31,h32;
 
 	h11 = matrixGetElement(r,0,0);
 	h12 = matrixGetElement(r,0,1);
@@ -227,6 +278,8 @@ void do_calcs()
 	h31 = matrixGetElement(r,0,6);
 	h32 = matrixGetElement(r,0,7);
 
+	wiim.calibrate(h11,h12,h13,h21,h22,h23,h31,h32);
+	
 	matrixFree(m);
 	matrixFree(n);
 	matrixFree(r);
@@ -242,15 +295,15 @@ void do_calcs()
 
 void movePointer(int x, int y)
 {
-        display = XOpenDisplay(0);
+	display = XOpenDisplay(0);
 	XTestFakeMotionEvent(display,-1,x,y,0);
 	XCloseDisplay(display);
 }
 
 void button(int p)
 {
-        display = XOpenDisplay(0);
-        XTestFakeButtonEvent(display,1,p,0);
+	display = XOpenDisplay(0);
+	XTestFakeButtonEvent(display,1,p,0);
 	//printf("BUTTON!! %d\n",p);
 	XCloseDisplay(display);
 }
@@ -289,9 +342,10 @@ void update_cursor()
 
 	t = myGetTicks();
 	if (event_has_occurred)
-	{ 
+	{
+		Point p = wiim.getPos();
 		event_has_occurred=0;
-		movePointer(rx,ry); 
+		movePointer(p.x, p.y); 
 		if (lastevent == 0) { button(1); }
 		lastevent = 1;
 		delta = t; 
