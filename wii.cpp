@@ -54,7 +54,10 @@ cwiid_wiimote_t *wiimote;       /* wiimote handle */
 struct cwiid_state state;       /* wiimote state */
 
 
-extern void infrared_data(int *v);
+namespace Callbacks
+{
+	void infrared_data(int *v);
+}
 extern void buttonpress();
 
 int wii_connect()
@@ -169,7 +172,7 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
 				//printf("no sources detected");
 			}
 			else
-				infrared_data(v);
+				Callbacks::infrared_data(v);
 
 			break;
 		case CWIID_MESG_ERROR:

@@ -80,6 +80,7 @@ class Wiimote
 	Wiimote()
 	{
 		state = NON_CALIBRATED;
+		p.x = p.y = 0;
 	}
 	
 	bool connection()
@@ -172,13 +173,13 @@ class Wiimote
 };
 
 
-Wiimote wiim;
-
 class FakeCursor
 {
 	protected:
 	
 	Display *display;
+	Wiimote *wii;
+	
 	typedef enum { ACTIVE, INACTIVE } state_t;
 	state_t state;
 
@@ -187,6 +188,11 @@ class FakeCursor
 	FakeCursor()
 	{
 		state = INACTIVE;
+	}
+	
+	void attachWiimote(Wiimote *wiim)
+	{
+		wii = wiim;
 	}
 	
 	void activate()
@@ -202,7 +208,7 @@ class FakeCursor
 		static int delta,t;
 		static int lastevent=0;
 
-		Point p = wiim.getPos();
+		Point p = wii->getPos();
 		move(p);
 		
 // 		t = Timer::getTicks();
@@ -232,7 +238,6 @@ class FakeCursor
 	
 	void rightClick()
 	{
-		Point p = wiim.getPos();
 		display = XOpenDisplay(0);
 		XTestFakeButtonEvent(display,1,1,0);
 		//printf("BUTTON!! %d\n",p);
@@ -249,7 +254,7 @@ class FakeCursor
 	
 };
 
-FakeCursor cursor;
+
 
 
 
@@ -262,7 +267,7 @@ int SIZEY;
 
 SDL_Surface *s;
 
-int ready=0, can_exit = 0;
+int can_exit = 0;
 
 char mac[100];
 
@@ -277,11 +282,28 @@ void buttonpress()
 	can_exit = 1;
 }
 
-
-void infrared_data(int *v)
+namespace Callbacks
 {
-	wiim.irData(v);
-	cursor.update();
+	
+	Wiimote *w;
+	FakeCursor *c;
+
+	void infrared_data(int *v)
+	{
+		w->irData(v);
+		c->update();
+	}
+	
+	void setWii(Wiimote *wii)
+	{
+		w = wii;
+	}
+	
+	void setCursor(FakeCursor *cursor)
+	{
+		c = cursor;
+	}
+
 }
 
 
@@ -363,11 +385,11 @@ void draw_cross(int x, int y)
 
 
 
-void the_end()
-{
-	wiim.endConnection();
-	exit(0);
-}
+// void the_end()
+// {
+// 	wiim.endConnection();
+// 	exit(0);
+// }
 
 
 
@@ -381,6 +403,14 @@ int main(int argc,char *argv[])
 	int i;
 	int t=0;
 	float xm1,ym1,xm2,ym2;
+	
+	FakeCursor cursor;
+	Wiimote wiim;
+	
+	cursor.attachWiimote(&wiim);
+	
+	Callbacks::setCursor(&cursor);
+	Callbacks::setWii(&wiim);
 
 	if(argc>2)
 	{
@@ -394,6 +424,8 @@ int main(int argc,char *argv[])
 	
 	if (!wiim.connection())
 		exit(1);
+	
+	std::cout << "PUTAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
 	
 	SDL_Init(SDL_INIT_VIDEO);
 	s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
@@ -477,7 +509,7 @@ int main(int argc,char *argv[])
 	printf("Done\n");
 
 	if (!ok)
-		the_end();
+		exit(1);
 
 // 	printpoints();
 	
@@ -490,7 +522,6 @@ int main(int argc,char *argv[])
 	while (!can_exit)
 		sleep(1);
 
-	the_end();
 	return 0;
 }
 
