@@ -99,17 +99,10 @@ Wiimote wiim;
 extern int wii_connect(char *mac);
 extern void wii_disconnect();
 
-int rx=0, ry=0;
+// int rx=0, ry=0;
 
 int SIZEX;
 int SIZEY;
-
-typedef struct {
-	int x,y;
-} point_t;
-
-point_t p_screen[4];
-point_t p_wii[4];
 
 SDL_Surface *s;
 
@@ -179,7 +172,7 @@ void pixel(int x, int y)
 
 
 
-void draw_point(point_t *p)
+void draw_point(Point *p)
 {
 	int i;
 	for (i=p->x-10; i<p->x+10; i++)
@@ -190,7 +183,7 @@ void draw_point(point_t *p)
 }
 
 
-void draw_square(point_t *p)
+void draw_square(Point *p)
 {
 	int i;
 	for (i=p->x-10; i<p->x+10; i++)
@@ -214,21 +207,21 @@ void draw_cross(int x, int y)
 
 
 
-void printpoints()
-{
-	int i;
-	for (i=0; i<4; i++)
-		printf("Point %d --> (%d,%d) === (%d,%d)\n", 
-			i,
-			p_screen[i].x,
-			p_screen[i].y,
-			p_wii[i].x,
-			p_wii[i].y);
-}
+// void printpoints()
+// {
+// 	int i;
+// 	for (i=0; i<4; i++)
+// 		printf("Point %d --> (%d,%d) === (%d,%d)\n", 
+// 			i,
+// 			p_screen[i].x,
+// 			p_screen[i].y,
+// 			p_wii[i].x,
+// 			p_wii[i].y);
+// }
 
 
 
-void do_calcs()
+void do_calcs(Point p_screen[], Point p_wii[])
 {
 	int i;
 
@@ -386,6 +379,8 @@ int main(int argc,char *argv[])
 	s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
 	black_color = SDL_MapRGB(s->format,0,0,0);
 
+	Point p_screen[4];
+	
 	p_screen[0].x = 50;	
 	p_screen[0].y = 50;
 
@@ -397,6 +392,8 @@ int main(int argc,char *argv[])
 
 	p_screen[3].x = SIZEX - 50;
 	p_screen[3].y = SIZEY - 50;
+	
+	Point p_wii[4];
 
 	SDL_FillRect(s,0,black_color);
 
@@ -405,16 +402,19 @@ int main(int argc,char *argv[])
 	ym1 = SIZEY / 2 - 100;
 	ym2 = ym1 + 200;
 
+	Point wiiP;
 	t = 0;
 	while(1)
 	{
+		wiiP = wiim.getPos();
+		
 		SDL_PollEvent(&e);
 		k = SDL_GetKeyState(NULL);
 		if (k[SDLK_ESCAPE]) { ok=0; break; }
 
 		if (k[SDLK_SPACE]) { state++; k[SDLK_SPACE]=0; }
 
-		if (state < 4) { p_wii[state].x = rx; p_wii[state].y = ry; }
+		if (state < 4) { p_wii[state] = wiiP; }
 		
 		if (state >= 4) 
 			break;
@@ -426,8 +426,8 @@ int main(int argc,char *argv[])
 			pixel(xm1,i), pixel(xm2,i);
 
 		draw_cross(
-			xm1 + (int) ( ((float) rx / (float) MAX_WII_X )*200),
-			ym2 - (int) ( ((float) ry / (float) MAX_WII_Y )*200)
+			xm1 + (int) ( ((float) wiiP.x / (float) MAX_WII_X )*200),
+			ym2 - (int) ( ((float) wiiP.y / (float) MAX_WII_Y )*200)
 		);
 
 		draw_point(&p_screen[0]);	
@@ -458,10 +458,10 @@ int main(int argc,char *argv[])
 	if (!ok)
 		the_end();
 
-	printpoints();
+// 	printpoints();
 	
 	printf("Calculating coefficients...");
-	do_calcs();
+	do_calcs(p_screen, p_wii);
 	printf("Done!\n");
 	
 	ready = 1;
