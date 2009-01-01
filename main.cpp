@@ -215,6 +215,11 @@ class FakeCursor
 		wii = wiim;
 	}
 	
+	Wiimote *getWii()
+	{
+		return wii;
+	}
+	
 	void activate()
 	{
 		state = ACTIVE;
@@ -225,24 +230,13 @@ class FakeCursor
 		state = INACTIVE;
 	}
 	
-	void update(int *v, int btn)
+	void update()
 	{		
 		if (!wii)
 			return;
 		
-		if (btn)
-		{
-			wii->pressButton();
-			return;
-		}
-		
-		if (v)
-			wii->irData(v);
-		
-		
 		if (state != ACTIVE)
 			return;
-		
 			
 		static int delta,t;
 		static int lastevent=0;
@@ -318,17 +312,28 @@ void buttonpress()
 namespace Callbacks
 {
 	FakeCursor *c;
+	Wiimote *w;
 
 	void wii_data(int *v, int btn)
 	{
-		c->update(v,btn);
+		if (v)
+			w->irData(v);
+		
+		if (btn)
+			w->pressButton();
+		
+		c->update();
 	}
 	
 	void setCursor(FakeCursor *cursor)
 	{
 		c = cursor;
 	}
-
+	
+	void setWii(Wiimote *wii)
+	{
+		w = wii;
+	}
 }
 
 
@@ -529,7 +534,9 @@ int main(int argc,char *argv[])
 	Timer::start();
 	
 	cursor.attachWiimote(&wiim);
+	
 	Callbacks::setCursor(&cursor);
+	Callbacks::setWii(&wiim);
 
 	if(argc>2)
 	{
