@@ -69,37 +69,48 @@ class Wiimote
 {
 	protected:
 
-	typedef enum { CALIBRATED, NON_CALIBRATED } state_t;
+	typedef enum { DISCONNECTED, CONNECTED, CALIBRATED } state_t;
 	state_t state;
 	Point p;
 	// Calibration data
 	float h11,h12,h13,h21,h22,h23,h31,h32;
+	
+	int button;
 
 	public:
 
 	Wiimote()
 	{
-		state = NON_CALIBRATED;
+		state = DISCONNECTED;
 		p.x = p.y = 0;
+		button = 0;
 	}
 	
 	bool connection()
 	{
 		if (wii_connect() == 0)
 			return false;
+		
+		state = CONNECTED;
 		return true;
 	}
 	
 	bool endConnection()
 	{
 		wii_disconnect();
+		state = DISCONNECTED;
+	}
+	
+	bool isButtonPressed()
+	{
+		return (button == 1);
 	}
 
 	void irData(int *v)
 	{
 		switch(state)
 		{
-			case (NON_CALIBRATED):
+			case (CONNECTED):
 				p.x = v[0];
 				p.y = v[1];
 				break;
@@ -107,6 +118,9 @@ class Wiimote
 			case (CALIBRATED):
 				p.x =  (int) ( ( (float)  (h11*v[0] + h12*v[1] + h13) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
 				p.y =  (int) ( ( (float)  (h21*v[0] + h22*v[1] + h23) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
+				break;
+				
+			default:
 				break;
 		}
 	}
@@ -170,6 +184,11 @@ class Wiimote
 	{
 		return p;
 	}
+	
+	void pressButton()
+	{
+		button = 1;
+	}
 };
 
 
@@ -188,6 +207,7 @@ class FakeCursor
 	FakeCursor()
 	{
 		state = INACTIVE;
+		wii = 0;
 	}
 	
 	void attachWiimote(Wiimote *wiim)
@@ -200,10 +220,29 @@ class FakeCursor
 		state = ACTIVE;
 	}
 	
-	void update()
+	void deactivate()
 	{
+		state = INACTIVE;
+	}
+	
+	void update(int *v, int btn)
+	{		
+		if (!wii)
+			return;
+		
+		if (btn)
+		{
+			wii->pressButton();
+			return;
+		}
+		
+		if (v)
+			wii->irData(v);
+		
+		
 		if (state != ACTIVE)
 			return;
+		
 			
 		static int delta,t;
 		static int lastevent=0;
@@ -240,7 +279,6 @@ class FakeCursor
 	{
 		display = XOpenDisplay(0);
 		XTestFakeButtonEvent(display,1,1,0);
-		//printf("BUTTON!! %d\n",p);
 		XCloseDisplay(display);
 	}
 	
@@ -258,10 +296,6 @@ class FakeCursor
 
 
 
-
-
-// int rx=0, ry=0;
-
 int SIZEX;
 int SIZEY;
 
@@ -271,7 +305,6 @@ int can_exit = 0;
 
 char mac[100];
 
-Display *display;
 
 #define MAX_WII_X 1020
 #define MAX_WII_Y 760
@@ -284,19 +317,11 @@ void buttonpress()
 
 namespace Callbacks
 {
-	
-	Wiimote *w;
 	FakeCursor *c;
 
-	void infrared_data(int *v)
+	void wii_data(int *v, int btn)
 	{
-		w->irData(v);
-		c->update();
-	}
-	
-	void setWii(Wiimote *wii)
-	{
-		w = wii;
+		c->update(v,btn);
 	}
 	
 	void setCursor(FakeCursor *cursor)
@@ -311,7 +336,7 @@ namespace Callbacks
 void read_parameters(int argc, char *argv[])
 {
 //===========================================SIZE
-        display = XOpenDisplay(0);
+	Display* display = XOpenDisplay(0);
 	int screen = DefaultScreen(display);	
 	SIZEX = DisplayWidth(display,screen);
 	SIZEY = DisplayHeight(display,screen);
@@ -504,9 +529,7 @@ int main(int argc,char *argv[])
 	Timer::start();
 	
 	cursor.attachWiimote(&wiim);
-	
 	Callbacks::setCursor(&cursor);
-	Callbacks::setWii(&wiim);
 
 	if(argc>2)
 	{
@@ -524,7 +547,7 @@ int main(int argc,char *argv[])
 	
 	cursor.activate();
 	
-	while (!can_exit)
+	while (!wiim.isButtonPressed())
 		sleep(1);
 
 	return 0;

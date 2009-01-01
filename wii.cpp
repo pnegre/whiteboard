@@ -56,7 +56,7 @@ struct cwiid_state state;       /* wiimote state */
 
 namespace Callbacks
 {
-	void infrared_data(int *v);
+	void wii_data(int *v, int btn);
 }
 extern void buttonpress();
 
@@ -153,7 +153,7 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
 		switch (mesg[i].type) {
 		case CWIID_MESG_BTN:
 			printf("Button Report: %.4X\n", mesg[i].btn_mesg.buttons);
-			buttonpress();
+			Callbacks::wii_data(0,1);
 			break;
 		case CWIID_MESG_IR:
 			valid_source = 0;
@@ -172,7 +172,7 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
 				//printf("no sources detected");
 			}
 			else
-				Callbacks::infrared_data(v);
+				Callbacks::wii_data(v,0);
 
 			break;
 		case CWIID_MESG_ERROR:
