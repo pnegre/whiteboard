@@ -58,21 +58,23 @@ extern void infrared_data(int *v);
 extern void buttonpress();
 extern void update_cursor();
 
-int wii_connect(char *mac)
+int wii_connect()
 {
 	bdaddr_t bdaddr;        /* bluetooth device address */
 	unsigned char rpt_mode = 0;
 
 	cwiid_set_err(err);
 
-	str2ba(mac, &bdaddr);
+// 	str2ba(mac, &bdaddr);
+// 	
+// 	if (mac[0]!='#') {
+// 		str2ba(mac, &bdaddr);
+// 	}
+// 	else {
+// 		bdaddr = *BDADDR_ANY;
+// 	}
 	
-	if (mac[0]!='#') {
-		str2ba(mac, &bdaddr);
-	}
-	else {
-		bdaddr = *BDADDR_ANY;
-	}
+	bdaddr = *BDADDR_ANY;
 
 	/* Connect to the wiimote */
         printf("Put Wiimote in discoverable mode now (press 1+2)...\n");

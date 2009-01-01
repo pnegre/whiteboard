@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <iostream>
+
 #include <SDL.h>
 #include <X11/extensions/XTest.h>
 #include <X11/Xlib.h>
@@ -31,7 +33,8 @@ extern "C" {
 	#include "matrix.h"
 }
 
-
+extern int wii_connect();
+extern void wii_disconnect();
 
 
 
@@ -58,6 +61,18 @@ class Wiimote
 	{
 		state = NON_CALIBRATED;
 	}
+	
+	bool connection()
+	{
+		if (wii_connect() == 0)
+			return false;
+		return true;
+	}
+	
+	bool endConnection()
+	{
+		wii_disconnect();
+	}
 
 	void irData(int *v)
 	{
@@ -75,11 +90,58 @@ class Wiimote
 		}
 	}
 	
-	void calibrate(float H11, float H12, float H13, float H21, float H22, float H23, float H31, float H32)
+	void calibrate(Point p_screen[], Point p_wii[])
 	{
-		h11 = H11; h12 = H12; h13 = H13;
-		h21 = H21; h22 = H22; h23 = H23;
-		h31 = H31; h32 = H32;
+		int i;
+
+		matrix_t *m, *n, *r;
+
+		m = matrixNew(8,8);
+		n = matrixNew(1,8);
+
+		for (i=0; i<4; i++)
+		{
+			matrixSetElement(n, (float) p_screen[i].x, 0, i*2);
+			matrixSetElement(n, (float) p_screen[i].y, 0, i*2 + 1);
+		}
+
+		for (i=0; i<4; i++)
+		{
+			matrixSetElement(m, (float) p_wii[i].x, 0, i*2);
+			matrixSetElement(m, (float) p_wii[i].y, 1, i*2);
+			matrixSetElement(m, (float) 1, 2, i*2);
+			matrixSetElement(m, (float) 0, 3, i*2);
+			matrixSetElement(m, (float) 0, 4, i*2);
+			matrixSetElement(m, (float) 0, 5, i*2);
+			matrixSetElement(m, (float) (-p_screen[i].x * p_wii[i].x), 6, i*2);
+			matrixSetElement(m, (float) (-p_screen[i].x * p_wii[i].y), 7, i*2);
+
+			matrixSetElement(m, (float) 0, 0, i*2+1);
+			matrixSetElement(m, (float) 0, 1, i*2+1);
+			matrixSetElement(m, (float) 0, 2, i*2+1);
+			matrixSetElement(m, (float) p_wii[i].x, 3, i*2+1);
+			matrixSetElement(m, (float) p_wii[i].y, 4, i*2+1);
+			matrixSetElement(m, (float) 1, 5, i*2+1);
+			matrixSetElement(m, (float) (-p_screen[i].y * p_wii[i].x), 6, i*2+1);
+			matrixSetElement(m, (float) (-p_screen[i].y * p_wii[i].y), 7, i*2+1);
+		}
+
+		matrixInverse(m);
+		r = matrixMultiply(m,n);
+
+		h11 = matrixGetElement(r,0,0);
+		h12 = matrixGetElement(r,0,1);
+		h13 = matrixGetElement(r,0,2);
+		h21 = matrixGetElement(r,0,3);
+		h22 = matrixGetElement(r,0,4);
+		h23 = matrixGetElement(r,0,5);
+		h31 = matrixGetElement(r,0,6);
+		h32 = matrixGetElement(r,0,7);
+		
+		matrixFree(m);
+		matrixFree(n);
+		matrixFree(r);
+		
 		state = CALIBRATED;
 	}
 
@@ -96,8 +158,7 @@ Wiimote wiim;
 
 
 
-extern int wii_connect(char *mac);
-extern void wii_disconnect();
+
 
 // int rx=0, ry=0;
 
@@ -127,6 +188,7 @@ void buttonpress()
 void infrared_data(int *v)
 {
 	wiim.irData(v);
+	event_has_occurred = 1;
 }
 
 
@@ -221,69 +283,6 @@ void draw_cross(int x, int y)
 
 
 
-void do_calcs(Point p_screen[], Point p_wii[])
-{
-	int i;
-
-	matrix_t *m, *n, *r;
-
-	m = matrixNew(8,8);
-	n = matrixNew(1,8);
-
-	for (i=0; i<4; i++)
-	{
-		matrixSetElement(n, (float) p_screen[i].x, 0, i*2);
-		matrixSetElement(n, (float) p_screen[i].y, 0, i*2 + 1);
-	}
-
-	for (i=0; i<4; i++)
-	{
-		matrixSetElement(m, (float) p_wii[i].x, 0, i*2);
-		matrixSetElement(m, (float) p_wii[i].y, 1, i*2);
-		matrixSetElement(m, (float) 1, 2, i*2);
-		matrixSetElement(m, (float) 0, 3, i*2);
-		matrixSetElement(m, (float) 0, 4, i*2);
-		matrixSetElement(m, (float) 0, 5, i*2);
-		matrixSetElement(m, (float) (-p_screen[i].x * p_wii[i].x), 6, i*2);
-		matrixSetElement(m, (float) (-p_screen[i].x * p_wii[i].y), 7, i*2);
-
-		matrixSetElement(m, (float) 0, 0, i*2+1);
-		matrixSetElement(m, (float) 0, 1, i*2+1);
-		matrixSetElement(m, (float) 0, 2, i*2+1);
-		matrixSetElement(m, (float) p_wii[i].x, 3, i*2+1);
-		matrixSetElement(m, (float) p_wii[i].y, 4, i*2+1);
-		matrixSetElement(m, (float) 1, 5, i*2+1);
-		matrixSetElement(m, (float) (-p_screen[i].y * p_wii[i].x), 6, i*2+1);
-		matrixSetElement(m, (float) (-p_screen[i].y * p_wii[i].y), 7, i*2+1);
-	}
-
-	matrixInverse(m);
-	r = matrixMultiply(m,n);
-	
-	float h11,h12,h13,h21,h22,h23,h31,h32;
-
-	h11 = matrixGetElement(r,0,0);
-	h12 = matrixGetElement(r,0,1);
-	h13 = matrixGetElement(r,0,2);
-	h21 = matrixGetElement(r,0,3);
-	h22 = matrixGetElement(r,0,4);
-	h23 = matrixGetElement(r,0,5);
-	h31 = matrixGetElement(r,0,6);
-	h32 = matrixGetElement(r,0,7);
-
-	wiim.calibrate(h11,h12,h13,h21,h22,h23,h31,h32);
-	
-	matrixFree(m);
-	matrixFree(n);
-	matrixFree(r);
-
-}
-
-
-
-
-
-
 
 
 void movePointer(int x, int y)
@@ -304,7 +303,7 @@ void button(int p)
 
 void the_end()
 {
-	wii_disconnect();
+	wiim.endConnection();
 	exit(0);
 }
 
@@ -372,7 +371,7 @@ int main(int argc,char *argv[])
 
 	read_parameters(argc,argv);
 	
-	if (wii_connect(mac) == 0)
+	if (!wiim.connection())
 		exit(1);
 	
 	SDL_Init(SDL_INIT_VIDEO);
@@ -380,6 +379,7 @@ int main(int argc,char *argv[])
 	black_color = SDL_MapRGB(s->format,0,0,0);
 
 	Point p_screen[4];
+	Point p_wii[4];
 	
 	p_screen[0].x = 50;	
 	p_screen[0].y = 50;
@@ -393,9 +393,9 @@ int main(int argc,char *argv[])
 	p_screen[3].x = SIZEX - 50;
 	p_screen[3].y = SIZEY - 50;
 	
-	Point p_wii[4];
+	
 
-	SDL_FillRect(s,0,black_color);
+// 	SDL_FillRect(s,0,black_color);
 
 	xm1 = SIZEX / 2 - 100;
 	xm2 = xm1 + 200;
@@ -461,7 +461,7 @@ int main(int argc,char *argv[])
 // 	printpoints();
 	
 	printf("Calculating coefficients...");
-	do_calcs(p_screen, p_wii);
+	wiim.calibrate(p_screen, p_wii);
 	printf("Done!\n");
 	
 	ready = 1;
