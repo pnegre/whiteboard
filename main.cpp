@@ -392,8 +392,7 @@ void draw_cross(int x, int y)
 // }
 
 
-
-int main(int argc,char *argv[])
+bool do_calibration(Wiimote *w)
 {
 	SDL_Event e;
 	Uint32 black_color;
@@ -403,29 +402,6 @@ int main(int argc,char *argv[])
 	int i;
 	int t=0;
 	float xm1,ym1,xm2,ym2;
-	
-	FakeCursor cursor;
-	Wiimote wiim;
-	
-	cursor.attachWiimote(&wiim);
-	
-	Callbacks::setCursor(&cursor);
-	Callbacks::setWii(&wiim);
-
-	if(argc>2)
-	{
-		printf("ERROR: \n       Usage demo <mac> \n");
-		return 0;
-	}
-	
-	Timer::start();
-
-	read_parameters(argc,argv);
-	
-	if (!wiim.connection())
-		exit(1);
-	
-	std::cout << "PUTAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
 	
 	SDL_Init(SDL_INIT_VIDEO);
 	s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
@@ -448,7 +424,7 @@ int main(int argc,char *argv[])
 	
 	
 
-// 	SDL_FillRect(s,0,black_color);
+	SDL_FillRect(s,0,black_color);
 
 	xm1 = SIZEX / 2 - 100;
 	xm2 = xm1 + 200;
@@ -459,7 +435,7 @@ int main(int argc,char *argv[])
 	t = 0;
 	while(1)
 	{
-		wiiP = wiim.getPos();
+		wiiP = w->getPos();
 		
 		SDL_PollEvent(&e);
 		k = SDL_GetKeyState(NULL);
@@ -509,13 +485,42 @@ int main(int argc,char *argv[])
 	printf("Done\n");
 
 	if (!ok)
-		exit(1);
-
-// 	printpoints();
+		return false;
 	
 	printf("Calculating coefficients...");
-	wiim.calibrate(p_screen, p_wii);
+	w->calibrate(p_screen, p_wii);
 	printf("Done!\n");
+	
+	return true;
+}
+
+
+
+int main(int argc,char *argv[])
+{
+	FakeCursor cursor;
+	Wiimote wiim;
+	
+	Timer::start();
+	
+	cursor.attachWiimote(&wiim);
+	
+	Callbacks::setCursor(&cursor);
+	Callbacks::setWii(&wiim);
+
+	if(argc>2)
+	{
+		printf("ERROR: \n       Usage demo <mac> \n");
+		return 0;
+	}
+
+	read_parameters(argc,argv);
+	
+	if (!wiim.connection())
+		exit(1);
+	
+	if (!do_calibration(&wiim))
+		exit(1);
 	
 	cursor.activate();
 	
