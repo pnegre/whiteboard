@@ -56,7 +56,6 @@ struct cwiid_state state;       /* wiimote state */
 
 extern void infrared_data(int *v);
 extern void buttonpress();
-extern void update_cursor();
 
 int wii_connect()
 {
@@ -184,6 +183,5 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
 			break;
 		}
 	}
-	update_cursor();
 }
 

@@ -36,6 +36,26 @@ extern "C" {
 extern int wii_connect();
 extern void wii_disconnect();
 
+namespace Timer
+{
+	struct timeval tst,tend;
+	struct timezone tz;
+
+	unsigned long getTicks()
+	{
+		static double t1,t2;
+
+		gettimeofday(&tend,&tz);
+		t1 = (double) tst.tv_sec*1000 + (double) tst.tv_usec/1000;
+		t2 = (double) tend.tv_sec*1000 + (double) tend.tv_usec/1000;
+		return (unsigned long int) (t2-t1);
+	}
+
+	static void start()
+	{
+		gettimeofday(&tst,&tz);
+	}
+}
 
 
 class Point
@@ -154,7 +174,82 @@ class Wiimote
 
 Wiimote wiim;
 
+class FakeCursor
+{
+	protected:
+	
+	Display *display;
+	typedef enum { ACTIVE, INACTIVE } state_t;
+	state_t state;
 
+	public:
+	
+	FakeCursor()
+	{
+		state = INACTIVE;
+	}
+	
+	void activate()
+	{
+		state = ACTIVE;
+	}
+	
+	void update()
+	{
+		if (state != ACTIVE)
+			return;
+			
+		static int delta,t;
+		static int lastevent=0;
+
+		Point p = wiim.getPos();
+		move(p);
+		
+// 		t = Timer::getTicks();
+// 		if (event_has_occurred)
+// 		{
+// 			Point p = wiim.getPos();
+// 			event_has_occurred=0;
+// 			move(p); 
+// 			if (lastevent == 0) { button(1); }
+// 			lastevent = 1;
+// 			delta = t; 
+// 		}
+// 		else
+// 		{
+// 			if ( (lastevent==1) && ((Timer::getTicks() - delta)>50)) 
+// 				{ button(0); lastevent = 0; }
+// 		}
+	}
+	
+	
+	void move(Point p)
+	{
+		display = XOpenDisplay(0);
+		XTestFakeMotionEvent(display,-1,p.x,p.y,0);
+		XCloseDisplay(display);
+	}
+	
+	void rightClick()
+	{
+		Point p = wiim.getPos();
+		display = XOpenDisplay(0);
+		XTestFakeButtonEvent(display,1,1,0);
+		//printf("BUTTON!! %d\n",p);
+		XCloseDisplay(display);
+	}
+	
+	void leftClick()
+	{
+	}
+	
+	void dblClick()
+	{
+	}
+	
+};
+
+FakeCursor cursor;
 
 
 
@@ -168,8 +263,6 @@ int SIZEY;
 SDL_Surface *s;
 
 int ready=0, can_exit = 0;
-
-int event_has_occurred = 0;
 
 char mac[100];
 
@@ -188,7 +281,7 @@ void buttonpress()
 void infrared_data(int *v)
 {
 	wiim.irData(v);
-	event_has_occurred = 1;
+	cursor.update();
 }
 
 
@@ -269,37 +362,6 @@ void draw_cross(int x, int y)
 
 
 
-// void printpoints()
-// {
-// 	int i;
-// 	for (i=0; i<4; i++)
-// 		printf("Point %d --> (%d,%d) === (%d,%d)\n", 
-// 			i,
-// 			p_screen[i].x,
-// 			p_screen[i].y,
-// 			p_wii[i].x,
-// 			p_wii[i].y);
-// }
-
-
-
-
-
-void movePointer(int x, int y)
-{
-	display = XOpenDisplay(0);
-	XTestFakeMotionEvent(display,-1,x,y,0);
-	XCloseDisplay(display);
-}
-
-void button(int p)
-{
-	display = XOpenDisplay(0);
-	XTestFakeButtonEvent(display,1,p,0);
-	//printf("BUTTON!! %d\n",p);
-	XCloseDisplay(display);
-}
-
 
 void the_end()
 {
@@ -307,47 +369,6 @@ void the_end()
 	exit(0);
 }
 
-static struct timeval tst,tend;
-static struct timezone tz;
-
-unsigned long myGetTicks()
-{
-	static double t1,t2;
-
-	gettimeofday(&tend,&tz);
-	t1 = (double) tst.tv_sec*1000 + (double) tst.tv_usec/1000;
-	t2 = (double) tend.tv_sec*1000 + (double) tend.tv_usec/1000;
-	return (unsigned long int) (t2-t1);
-}
-
-static void myStartTimer()
-{
-	gettimeofday(&tst,&tz);
-}
-
-
-
-void update_cursor()
-{
-	static int delta,t;
-	static int lastevent=0;
-
-	t = myGetTicks();
-	if (event_has_occurred)
-	{
-		Point p = wiim.getPos();
-		event_has_occurred=0;
-		movePointer(p.x, p.y); 
-		if (lastevent == 0) { button(1); }
-		lastevent = 1;
-		delta = t; 
-	}
-	else
-	{
-		if ( (lastevent==1) && ((myGetTicks() - delta)>50)) 
-			{ button(0); lastevent = 0; }
-	}
-}
 
 
 int main(int argc,char *argv[])
@@ -367,7 +388,7 @@ int main(int argc,char *argv[])
 		return 0;
 	}
 	
-	myStartTimer();
+	Timer::start();
 
 	read_parameters(argc,argv);
 	
@@ -464,7 +485,8 @@ int main(int argc,char *argv[])
 	wiim.calibrate(p_screen, p_wii);
 	printf("Done!\n");
 	
-	ready = 1;
+	cursor.activate();
+	
 	while (!can_exit)
 		sleep(1);
 
