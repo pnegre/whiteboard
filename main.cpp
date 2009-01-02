@@ -304,7 +304,7 @@ class Click
 {
 	public:
 		
-	typedef enum { LEFT = 1, RIGHT } but_t;
+	typedef enum { LEFT = 1, RIGHT=3 } but_t;
 	
 	protected:
 	
@@ -360,6 +360,7 @@ class FakeCursor
 	typedef enum { ACTIVE, INACTIVE } state_t;
 	state_t state;
 	
+	Click::but_t clickType;
 	Click *click;
 
 	public:
@@ -369,6 +370,7 @@ class FakeCursor
 		state = INACTIVE;
 		wii = 0;
 		click = 0;
+		setClickType(Click::LEFT);
 	}
 	
 	void attachWiimote(Wiimote *wiim)
@@ -391,6 +393,23 @@ class FakeCursor
 		state = INACTIVE;
 	}
 	
+	void setClickType(Click::but_t c)
+	{
+		clickType = c;
+	}
+	
+	bool checkLimits(Point p)
+	{
+		if ((p.x < 0) || (p.y < 0))
+		{
+			setClickType(Click::RIGHT);
+			//std::cout << "LIMIT1 ";
+			return false;
+			
+		}
+		return true;
+	}
+	
 	void update()
 	{		
 		if (!wii)
@@ -402,10 +421,13 @@ class FakeCursor
 		if (wii->dataReady())
 		{
 			Point p = wii->getPos();
+			if ((!click) && (checkLimits(p) == false))
+				return;
+			
 			move(p);
 			
 			if (!click)
-				click = new Click(Click::LEFT);
+				click = new Click(clickType);
 			else
 				click->refresh(true);
 		}
@@ -415,6 +437,7 @@ class FakeCursor
 			{
 				if (!click->refresh(false))
 				{
+					clickType = Click::LEFT;
 					delete click;
 					click = 0;
 				}
@@ -690,6 +713,7 @@ int main(int argc,char *argv[])
 	
 	FakeCursor cursor;
 	cursor.attachWiimote(&wiim);
+	//cursor.setClickType(Click::RIGHT);
 	cursor.activate();
 	
 	while (!wiim.isButtonPressed())
@@ -697,6 +721,8 @@ int main(int argc,char *argv[])
 		wiim.getMsgs();
 		cursor.update();
 	}
+	
+	wiim.endConnection();
 
 	return 0;
 }
