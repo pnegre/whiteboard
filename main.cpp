@@ -302,14 +302,18 @@ class Wiimote
 
 class Click
 {
+	public:
+		
+	typedef enum { LEFT = 1, RIGHT } but_t;
+	
 	protected:
 	
-	int but;
+	but_t but;
 	int initialTime;
 	
 	public:
 	
-	Click(int b)
+	Click(but_t b)
 	{
 		initialTime = Timer::getTicks();
 		but = b;
@@ -339,7 +343,7 @@ class Click
 	void button(bool press)
 	{
 		Display* display = XOpenDisplay(0);
-		XTestFakeButtonEvent(display,1,(int) press,0);
+		XTestFakeButtonEvent(display, but, (int) press, 0);
 		XCloseDisplay(display);
 	}
 	
@@ -356,10 +360,6 @@ class FakeCursor
 	typedef enum { ACTIVE, INACTIVE } state_t;
 	state_t state;
 	
-	int lastEventTime;
-	typedef enum { CLICKING, DRAGGING } cursor_state_t;
-	cursor_state_t cursor_state;
-	
 	Click *click;
 
 	public:
@@ -368,8 +368,6 @@ class FakeCursor
 	{
 		state = INACTIVE;
 		wii = 0;
-		lastEventTime = 0;
-		cursor_state = CLICKING;
 		click = 0;
 	}
 	
@@ -407,7 +405,7 @@ class FakeCursor
 			move(p);
 			
 			if (!click)
-				click = new Click(1);
+				click = new Click(Click::LEFT);
 			else
 				click->refresh(true);
 		}
@@ -423,50 +421,6 @@ class FakeCursor
 			}
 		}
 		
-		
-		/*static int t;
-		
-		t = Timer::getTicks();
-
-		if (wii->dataReady())
-		{
-			if (cursor_state == CLICKING)
-			{
-				leftClick(1);
-				cursor_state = DRAGGING;
-				std::cout << "BB\n";
-			}
-			Point p = wii->getPos();
-			move(p);
-			std::cout << p.x << " --- " << p.y << "\n";
-		
-			lastEventTime = t;
-		}
-		else
-		{
-			if ((t - lastEventTime)>100 && (cursor_state == DRAGGING))
-			{
-				leftClick(0);
-				cursor_state = CLICKING;
-				std::cout << "AA\n";
-			}
-		}
-		*/
-// 		
-// 		if (event_has_occurred)
-// 		{
-// 			Point p = wiim.getPos();
-// 			event_has_occurred=0;
-// 			move(p); 
-// 			if (lastevent == 0) { button(1); }
-// 			lastevent = 1;
-// 			delta = t; 
-// 		}
-// 		else
-// 		{
-// 			if ( (lastevent==1) && ((Timer::getTicks() - delta)>50)) 
-// 				{ button(0); lastevent = 0; }
-// 		}
 	}
 	
 	
@@ -475,21 +429,6 @@ class FakeCursor
 		display = XOpenDisplay(0);
 		XTestFakeMotionEvent(display,-1,p.x,p.y,0);
 		XCloseDisplay(display);
-	}
-	
-	void leftClick(int pressed)
-	{
-		display = XOpenDisplay(0);
-		XTestFakeButtonEvent(display,1,pressed,0);
-		XCloseDisplay(display);
-	}
-	
-	void leftClick()
-	{
-	}
-	
-	void dblClick()
-	{
 	}
 	
 };
