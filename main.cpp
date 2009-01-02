@@ -300,6 +300,52 @@ class Wiimote
 };
 
 
+class Click
+{
+	protected:
+	
+	int but;
+	int initialTime;
+	
+	public:
+	
+	Click(int b)
+	{
+		initialTime = Timer::getTicks();
+		but = b;
+		button(true);
+	}
+	
+	bool refresh(bool evt)
+	{
+		int t = Timer::getTicks();
+		
+		if (evt)
+		{
+			initialTime = t;
+			return true;
+		}
+		else
+		{
+			if ((t - initialTime) > 50)
+			{
+				button(false);
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	void button(bool press)
+	{
+		Display* display = XOpenDisplay(0);
+		XTestFakeButtonEvent(display,1,(int) press,0);
+		XCloseDisplay(display);
+	}
+	
+};
+
+
 class FakeCursor
 {
 	protected:
@@ -313,6 +359,8 @@ class FakeCursor
 	int lastEventTime;
 	typedef enum { CLICKING, DRAGGING } cursor_state_t;
 	cursor_state_t cursor_state;
+	
+	Click *click;
 
 	public:
 	
@@ -322,6 +370,7 @@ class FakeCursor
 		wii = 0;
 		lastEventTime = 0;
 		cursor_state = CLICKING;
+		click = 0;
 	}
 	
 	void attachWiimote(Wiimote *wiim)
@@ -351,16 +400,31 @@ class FakeCursor
 		
 		if (state != ACTIVE)
 			return;
+		
+		if (wii->dataReady())
+		{
+			Point p = wii->getPos();
+			move(p);
 			
-// 		if (wii->dataReady())
-// 		{
-// 			Point p = wii->getPos();
-// 				move(p);
-// 		}
-// 		return;
+			if (!click)
+				click = new Click(1);
+			else
+				click->refresh(true);
+		}
+		else
+		{
+			if (click)
+			{
+				if (!click->refresh(false))
+				{
+					delete click;
+					click = 0;
+				}
+			}
+		}
 		
 		
-		static int t;
+		/*static int t;
 		
 		t = Timer::getTicks();
 
@@ -387,7 +451,7 @@ class FakeCursor
 				std::cout << "AA\n";
 			}
 		}
-		
+		*/
 // 		
 // 		if (event_has_occurred)
 // 		{
