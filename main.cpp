@@ -304,7 +304,7 @@ class Click
 {
 	public:
 		
-	typedef enum { LEFT = 1, RIGHT=3 } but_t;
+	typedef enum { LEFT = 1, RIGHT=3, DOUBLE } but_t;
 	
 	protected:
 	
@@ -323,6 +323,9 @@ class Click
 	bool refresh(bool evt)
 	{
 		int t = Timer::getTicks();
+		
+		if (but == DOUBLE)
+			return false;
 		
 		if (evt)
 		{
@@ -343,9 +346,29 @@ class Click
 	void button(bool press)
 	{
 		Display* display = XOpenDisplay(0);
-		XTestFakeButtonEvent(display, but, (int) press, 0);
+		
+		switch(but)
+		{
+			case LEFT:
+				XTestFakeButtonEvent(display, 1, (int) press, 0);
+				break;
+				
+			case RIGHT:
+				XTestFakeButtonEvent(display, 3, (int) press, 0);
+				break;
+				
+			case DOUBLE:
+				XTestFakeButtonEvent(display, 1, 1, 0);
+				XTestFakeButtonEvent(display, 1, 0, 40);
+				XTestFakeButtonEvent(display, 1, 1, 80);
+				XTestFakeButtonEvent(display, 1, 0, 120);
+				break;
+		}
+		
 		XCloseDisplay(display);
 	}
+	
+	
 	
 };
 
@@ -400,12 +423,15 @@ class FakeCursor
 	
 	bool checkLimits(Point p)
 	{
-		if ((p.x < 0) || (p.y < 0))
+		if (p.x < 0)
 		{
 			setClickType(Click::RIGHT);
-			//std::cout << "LIMIT1 ";
+			return false;	
+		}
+		if (p.y < 0)
+		{
+			setClickType(Click::DOUBLE);
 			return false;
-			
 		}
 		return true;
 	}
@@ -694,18 +720,6 @@ int main(int argc,char *argv[])
 	if (!wiim.connection())
 		exit(1);
 	
-// 	int frm = 0;
-// 	while(frm++ < 1000)
-// 	{
-// 		if (wiim.getMsgs())
-// 		{
-// 			Point p = wiim.getPos();
-// 			std::cout << "IR MSG\n";
-// 			std::cout << p.x << " " << p.y << "\n";
-// 		}
-// 	}
-// 	exit(0);
-	
 	if (!Calibration::do_calibration(&wiim))
 		exit(1);
 	
@@ -713,7 +727,6 @@ int main(int argc,char *argv[])
 	
 	FakeCursor cursor;
 	cursor.attachWiimote(&wiim);
-	//cursor.setClickType(Click::RIGHT);
 	cursor.activate();
 	
 	while (!wiim.isButtonPressed())
