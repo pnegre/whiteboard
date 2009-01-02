@@ -1,7 +1,7 @@
 
 
 env = Environment()
-
+env.Append(CCFLAGS = '-g')
 
 #deps = (
 #	'cairomm-1.0',

@@ -29,12 +29,14 @@
 #include <X11/Xlib.h>
 #include <sys/time.h>
 
+#include <cwiid.h>
+
 extern "C" {
 	#include "matrix.h"
 }
 
-extern int wii_connect();
-extern void wii_disconnect();
+// extern int wii_connect();
+// extern void wii_disconnect();
 
 namespace Timer
 {
@@ -64,6 +66,20 @@ class Point
 	int x, y;
 };
 
+void set_led_state(cwiid_wiimote_t *wiimote, unsigned char led_state)
+{
+	if (cwiid_command(wiimote, CWIID_CMD_LED, led_state)) {
+		fprintf(stderr, "Error setting LEDs \n");
+	}
+}
+	
+void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
+{
+	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
+		fprintf(stderr, "Error setting report mode\n");
+	}
+};
+
 
 class Wiimote
 {
@@ -76,6 +92,11 @@ class Wiimote
 	float h11,h12,h13,h21,h22,h23,h31,h32;
 	
 	int button;
+	
+	cwiid_wiimote_t *wiimote;
+	struct cwiid_state wiiState;
+	
+	int newData;
 
 	public:
 
@@ -84,26 +105,112 @@ class Wiimote
 		state = DISCONNECTED;
 		p.x = p.y = 0;
 		button = 0;
+		wiimote = 0;
+		newData = 0;
 	}
 	
 	bool connection()
 	{
-		if (wii_connect() == 0)
-			return false;
+		bdaddr_t bdaddr;
+		bdaddr = *BDADDR_ANY;
+
+        printf("Put Wiimote in discoverable mode now (press 1+2)...\n");
+        if (!(wiimote = cwiid_connect(&bdaddr, 0))) {
+                fprintf(stderr, "Unable to connect to wiimote\n");
+                return false;
+        }
+		printf("Connected!\n");
+		
+		set_led_state(wiimote, CWIID_LED1_ON);
+		set_rpt_mode(wiimote, CWIID_RPT_IR | CWIID_RPT_BTN);
+		cwiid_enable(wiimote, CWIID_FLAG_MESG_IFC);
+        cwiid_enable(wiimote, CWIID_FLAG_NONBLOCK);
+		cwiid_disable(wiimote, CWIID_FLAG_CONTINUOUS);
 		
 		state = CONNECTED;
 		return true;
 	}
 	
+	bool getMsgs()
+	{
+		int msg_count = 0;
+		cwiid_mesg *mesg = 0;
+		timespec tspec;
+		cwiid_get_mesg(wiimote, &msg_count, &mesg, &tspec);
+		//std::cout << "Msgs: " << msg_count << "\n";
+		//std::cout << "Msgs: " << mesg << "\n";
+		
+		int valid_source = 0;
+		int i,j;
+		for (i=0; i < msg_count; i++)
+		{
+			switch (mesg[i].type) {
+			case CWIID_MESG_BTN:
+				//std::cout << "EE\n";
+				printf("Button Report: %.4X\n", mesg[i].btn_mesg.buttons);
+				pressButton();
+				break;
+			case CWIID_MESG_IR:
+				//std::cout << "II\n";
+				valid_source = 0;
+				static int v[8];
+				for (j = 0; j < CWIID_IR_SRC_COUNT; j++) {
+					//std::cout << j << "\n";
+					if (mesg[i].ir_mesg.src[j].valid) {
+						valid_source = 1;
+						//printf("(%d,%d) \n\n", mesg[i].ir_mesg.src[j].pos[CWIID_X],
+						//                   mesg[i].ir_mesg.src[j].pos[CWIID_Y]);
+						v[j*2] = mesg[i].ir_mesg.src[j].pos[CWIID_X];
+						v[j*2+1] = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
+					}
+					else v[j*2] = v[j*2+1] = 0;
+				}
+				if (!valid_source) {
+					//printf("no sources detected\n");
+				}
+				else
+				{
+					irData(v);
+					return true;
+					//std::cout << "OO\n";
+				}
+
+				break;
+			case CWIID_MESG_ERROR:
+				if (cwiid_disconnect(wiimote)) {
+					fprintf(stderr, "Error on wiimote disconnect\n");
+					exit(-1);
+				}
+				exit(0);
+				break;
+			default:
+				break;
+			}
+		}
+		
+		if (msg_count)
+			return true;	
+	}
+	
 	bool endConnection()
 	{
-		wii_disconnect();
+		cwiid_disconnect(wiimote);
 		state = DISCONNECTED;
 	}
 	
 	bool isButtonPressed()
 	{
 		return (button == 1);
+	}
+	
+	bool dataReady()
+	{
+		if (newData)
+		{
+			newData = 0;
+			return true;
+		}
+		return false;
 	}
 
 	void irData(int *v)
@@ -123,6 +230,7 @@ class Wiimote
 			default:
 				break;
 		}
+		newData = 1;
 	}
 	
 	void calibrate(Point p_screen[], Point p_wii[])
@@ -201,6 +309,10 @@ class FakeCursor
 	
 	typedef enum { ACTIVE, INACTIVE } state_t;
 	state_t state;
+	
+	int lastEventTime;
+	typedef enum { CLICKING, DRAGGING } cursor_state_t;
+	cursor_state_t cursor_state;
 
 	public:
 	
@@ -208,6 +320,8 @@ class FakeCursor
 	{
 		state = INACTIVE;
 		wii = 0;
+		lastEventTime = 0;
+		cursor_state = CLICKING;
 	}
 	
 	void attachWiimote(Wiimote *wiim)
@@ -238,13 +352,43 @@ class FakeCursor
 		if (state != ACTIVE)
 			return;
 			
-		static int delta,t;
-		static int lastevent=0;
-
-		Point p = wii->getPos();
-		move(p);
+// 		if (wii->dataReady())
+// 		{
+// 			Point p = wii->getPos();
+// 				move(p);
+// 		}
+// 		return;
 		
-// 		t = Timer::getTicks();
+		
+		static int t;
+		
+		t = Timer::getTicks();
+
+		if (wii->dataReady())
+		{
+			if (cursor_state == CLICKING)
+			{
+				leftClick(1);
+				cursor_state = DRAGGING;
+				std::cout << "BB\n";
+			}
+			Point p = wii->getPos();
+			move(p);
+			std::cout << p.x << " --- " << p.y << "\n";
+		
+			lastEventTime = t;
+		}
+		else
+		{
+			if ((t - lastEventTime)>100 && (cursor_state == DRAGGING))
+			{
+				leftClick(0);
+				cursor_state = CLICKING;
+				std::cout << "AA\n";
+			}
+		}
+		
+// 		
 // 		if (event_has_occurred)
 // 		{
 // 			Point p = wiim.getPos();
@@ -269,10 +413,10 @@ class FakeCursor
 		XCloseDisplay(display);
 	}
 	
-	void rightClick()
+	void leftClick(int pressed)
 	{
 		display = XOpenDisplay(0);
-		XTestFakeButtonEvent(display,1,1,0);
+		XTestFakeButtonEvent(display,1,pressed,0);
 		XCloseDisplay(display);
 	}
 	
@@ -293,7 +437,7 @@ class FakeCursor
 int SIZEX;
 int SIZEY;
 
-SDL_Surface *s;
+
 
 int can_exit = 0;
 
@@ -307,33 +451,6 @@ char mac[100];
 void buttonpress()
 {
 	can_exit = 1;
-}
-
-namespace Callbacks
-{
-	FakeCursor *c;
-	Wiimote *w;
-
-	void wii_data(int *v, int btn)
-	{
-		if (v)
-			w->irData(v);
-		
-		if (btn)
-			w->pressButton();
-		
-		c->update();
-	}
-	
-	void setCursor(FakeCursor *cursor)
-	{
-		c = cursor;
-	}
-	
-	void setWii(Wiimote *wii)
-	{
-		w = wii;
-	}
 }
 
 
@@ -365,178 +482,180 @@ void read_parameters(int argc, char *argv[])
 }
 
 
-
-
-
-void pixel(int x, int y)
+namespace Calibration
 {
-	Uint32 *m;
-	y *= s->w;
-	m = (Uint32*) s->pixels + y + x;
-	*m = SDL_MapRGB(s->format,255,255,255);
-}
-
-
-
-
-void draw_point(Point *p)
-{
-	int i;
-	for (i=p->x-10; i<p->x+10; i++)
-		pixel(i,p->y);
+	SDL_Surface *s;
 	
-	for (i=p->y-10; i<p->y+10; i++)
-		pixel(p->x,i);
-}
-
-
-void draw_square(Point *p)
-{
-	int i;
-	for (i=p->x-10; i<p->x+10; i++)
-		pixel(i,p->y+10), pixel(i,p->y-10);
-
-        for (i=p->y-10; i<p->y+10; i++)
-                pixel(p->x-10,i), pixel(p->x+10,i);
-
-}
-
-
-void draw_cross(int x, int y)
-{
-	int x1,y1;
-	int i;
-	for(i=-5; i<=5; i++)
-		pixel(x,y+i);
-	for(i=-5; i<=5; i++)
-		pixel(x+i,y);
-}
-
-
-
-
-// void the_end()
-// {
-// 	wiim.endConnection();
-// 	exit(0);
-// }
-
-
-bool do_calibration(Wiimote *w)
-{
-	SDL_Event e;
-	Uint32 black_color;
-	Uint8 *k;
-	int state = 0;
-	int ok=1;
-	int i;
-	int t=0;
-	float xm1,ym1,xm2,ym2;
-	
-	SDL_Init(SDL_INIT_VIDEO);
-	s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
-	black_color = SDL_MapRGB(s->format,0,0,0);
-
-	Point p_screen[4];
-	Point p_wii[4];
-	
-	p_screen[0].x = 50;	
-	p_screen[0].y = 50;
-
-	p_screen[1].x = SIZEX - 50;
-	p_screen[1].y = 50;
-
-	p_screen[2].x = 50;
-	p_screen[2].y = SIZEY - 50;
-
-	p_screen[3].x = SIZEX - 50;
-	p_screen[3].y = SIZEY - 50;
-	
-	
-
-	SDL_FillRect(s,0,black_color);
-
-	xm1 = SIZEX / 2 - 100;
-	xm2 = xm1 + 200;
-	ym1 = SIZEY / 2 - 100;
-	ym2 = ym1 + 200;
-
-	Point wiiP;
-	t = 0;
-	while(1)
+	void pixel(int x, int y)
 	{
-		wiiP = w->getPos();
-		
-		SDL_PollEvent(&e);
-		k = SDL_GetKeyState(NULL);
-		if (k[SDLK_ESCAPE]) { ok=0; break; }
-
-		if (k[SDLK_SPACE]) { state++; k[SDLK_SPACE]=0; }
-
-		if (state < 4) { p_wii[state] = wiiP; }
-		
-		if (state >= 4) 
-			break;
-
-		for (i = (int) xm1; i < (int) xm2; i++)
-			pixel(i,ym1), pixel(i,ym2);
-
-		for (i = (int) ym1; i < (int) ym2; i++)
-			pixel(xm1,i), pixel(xm2,i);
-
-		draw_cross(
-			xm1 + (int) ( ((float) wiiP.x / (float) MAX_WII_X )*200),
-			ym2 - (int) ( ((float) wiiP.y / (float) MAX_WII_Y )*200)
-		);
-
-		draw_point(&p_screen[0]);	
-		draw_point(&p_screen[1]);	
-		draw_point(&p_screen[2]);	
-		draw_point(&p_screen[3]);	
-
-		if (state<4)
-			for(i=0; i<state; i++)
-				draw_square(&p_screen[i]);
-
-		if ((state<4) && (t)) 
-			draw_square(&p_screen[state]);
-
-		t = ~ t; 
-
-		//SDL_UpdateRect(s,0,0,0,0);
-		SDL_Flip(s);
-		SDL_Delay(100);
-		SDL_FillRect(s,0,black_color);
+		Uint32 *m;
+		y *= s->w;
+		m = (Uint32*) s->pixels + y + x;
+		*m = SDL_MapRGB(s->format,255,255,255);
 	}
-	
-	printf("Quitting SDL..");
-	SDL_FreeSurface(s);
-	SDL_Quit();	
-	printf("Done\n");
 
-	if (!ok)
-		return false;
-	
-	printf("Calculating coefficients...");
-	w->calibrate(p_screen, p_wii);
-	printf("Done!\n");
-	
-	return true;
+
+
+
+	void draw_point(Point *p)
+	{
+		int i;
+		for (i=p->x-10; i<p->x+10; i++)
+			pixel(i,p->y);
+		
+		for (i=p->y-10; i<p->y+10; i++)
+			pixel(p->x,i);
+	}
+
+
+	void draw_square(Point *p)
+	{
+		int i;
+		for (i=p->x-10; i<p->x+10; i++)
+			pixel(i,p->y+10), pixel(i,p->y-10);
+
+			for (i=p->y-10; i<p->y+10; i++)
+					pixel(p->x-10,i), pixel(p->x+10,i);
+
+	}
+
+
+	void draw_cross(int x, int y)
+	{
+		int x1,y1;
+		int i;
+		for(i=-5; i<=5; i++)
+			pixel(x,y+i);
+		for(i=-5; i<=5; i++)
+			pixel(x+i,y);
+	}
+
+
+
+
+	// void the_end()
+	// {
+	// 	wiim.endConnection();
+	// 	exit(0);
+	// }
+
+
+	bool do_calibration(Wiimote *w)
+	{
+		SDL_Event e;
+		Uint32 black_color;
+		Uint8 *k;
+		int state = 0;
+		int ok=1;
+		int i;
+		int t=0;
+		float xm1,ym1,xm2,ym2;
+		
+		SDL_Init(SDL_INIT_VIDEO);
+		s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
+		black_color = SDL_MapRGB(s->format,0,0,0);
+
+		Point p_screen[4];
+		Point p_wii[4];
+		
+		p_screen[0].x = 50;	
+		p_screen[0].y = 50;
+
+		p_screen[1].x = SIZEX - 50;
+		p_screen[1].y = 50;
+
+		p_screen[2].x = 50;
+		p_screen[2].y = SIZEY - 50;
+
+		p_screen[3].x = SIZEX - 50;
+		p_screen[3].y = SIZEY - 50;
+		
+		
+
+		SDL_FillRect(s,0,black_color);
+
+		xm1 = SIZEX / 2 - 100;
+		xm2 = xm1 + 200;
+		ym1 = SIZEY / 2 - 100;
+		ym2 = ym1 + 200;
+
+		Point wiiP;
+		wiiP.x = wiiP.y = 0;
+		t = 0;
+		while(1)
+		{
+			if (w->getMsgs())
+			{
+// 				std::cout << "IR MSG\n";
+				wiiP = w->getPos();
+			}
+ 			else
+ 				SDL_Delay(50);
+			
+			SDL_PollEvent(&e);
+			k = SDL_GetKeyState(NULL);
+			if (k[SDLK_ESCAPE]) { ok=0; break; }
+
+			if (k[SDLK_SPACE]) { state++; k[SDLK_SPACE]=0; }
+
+			if (state < 4) { p_wii[state] = wiiP; }
+			
+			if (state >= 4) 
+				break;
+
+			for (i = (int) xm1; i < (int) xm2; i++)
+				pixel(i,ym1), pixel(i,ym2);
+
+			for (i = (int) ym1; i < (int) ym2; i++)
+				pixel(xm1,i), pixel(xm2,i);
+
+			draw_cross(
+				xm1 + (int) ( ((float) wiiP.x / (float) MAX_WII_X )*200),
+				ym2 - (int) ( ((float) wiiP.y / (float) MAX_WII_Y )*200)
+			);
+
+			draw_point(&p_screen[0]);	
+			draw_point(&p_screen[1]);	
+			draw_point(&p_screen[2]);	
+			draw_point(&p_screen[3]);	
+
+			if (state<4)
+				for(i=0; i<state; i++)
+					draw_square(&p_screen[i]);
+
+			if ((state<4)) 
+				draw_square(&p_screen[state]);
+
+			t = ~ t; 
+
+			//SDL_UpdateRect(s,0,0,0,0);
+			SDL_Flip(s);
+			//SDL_Delay(100);
+			SDL_FillRect(s,0,black_color);
+		}
+		
+		printf("Quitting SDL..");
+		SDL_FreeSurface(s);
+		SDL_Quit();	
+		printf("Done\n");
+
+		if (!ok)
+			return false;
+		
+		printf("Calculating coefficients...");
+		w->calibrate(p_screen, p_wii);
+		printf("Done!\n");
+		
+		return true;
+	}
 }
-
 
 
 int main(int argc,char *argv[])
 {
-	FakeCursor cursor;
 	Wiimote wiim;
 	
 	Timer::start();
-	
-	cursor.attachWiimote(&wiim);
-	
-	Callbacks::setCursor(&cursor);
-	Callbacks::setWii(&wiim);
 
 	if(argc>2)
 	{
@@ -549,13 +668,32 @@ int main(int argc,char *argv[])
 	if (!wiim.connection())
 		exit(1);
 	
-	if (!do_calibration(&wiim))
+// 	int frm = 0;
+// 	while(frm++ < 1000)
+// 	{
+// 		if (wiim.getMsgs())
+// 		{
+// 			Point p = wiim.getPos();
+// 			std::cout << "IR MSG\n";
+// 			std::cout << p.x << " " << p.y << "\n";
+// 		}
+// 	}
+// 	exit(0);
+	
+	if (!Calibration::do_calibration(&wiim))
 		exit(1);
 	
+	wiim.getMsgs();
+	
+	FakeCursor cursor;
+	cursor.attachWiimote(&wiim);
 	cursor.activate();
 	
 	while (!wiim.isButtonPressed())
-		sleep(1);
+	{
+		wiim.getMsgs();
+		cursor.update();
+	}
 
 	return 0;
 }
