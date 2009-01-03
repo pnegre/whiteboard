@@ -50,7 +50,7 @@ bool Wiimote::connection()
 	set_led_state(wiimote, CWIID_LED1_ON);
 	set_rpt_mode(wiimote, CWIID_RPT_IR | CWIID_RPT_BTN);
 	cwiid_enable(wiimote, CWIID_FLAG_MESG_IFC);
-	cwiid_enable(wiimote, CWIID_FLAG_NONBLOCK);
+	cwiid_disable(wiimote, CWIID_FLAG_NONBLOCK);
 	cwiid_disable(wiimote, CWIID_FLAG_CONTINUOUS);
 	
 	state = CONNECTED;

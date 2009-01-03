@@ -28,6 +28,7 @@ namespace Timer
 
 #include <SDL.h>
 #include <X11/Xlib.h>
+#include <iostream>
 
 #include "calibration.h"
 #include "point.h"
@@ -183,17 +184,17 @@ namespace Calibration
 			SDL_FillRect(s,0,black_color);
 		}
 		
-		printf("Quitting SDL..");
+		std::cout << "Quitting SDL..";
 		SDL_FreeSurface(s);
 		SDL_Quit();	
-		printf("Done\n");
+		std::cout << "Done\n";
 
 		if (!ok)
 			return false;
 		
-		printf("Calculating coefficients...");
+		std::cout << "Calculating coefficients...";
 		w->calibrate(p_screen, p_wii);
-		printf("Done!\n");
+		std::cout << "Done!\n";
 		
 		return true;
 	}

@@ -54,6 +54,9 @@ void Click::button(bool press)
 			XTestFakeButtonEvent(display, 1, 1, 80);
 			XTestFakeButtonEvent(display, 1, 0, 120);
 			break;
+		
+		case NOCLICK:
+			break;
 	}
 	
 	XCloseDisplay(display);
@@ -100,6 +103,11 @@ void FakeCursor::setClickType(Click::but_t c)
 
 bool FakeCursor::checkLimits(Point p)
 {
+	if ((p.x < 0) && (p.y < 0))
+	{
+		setClickType(Click::NOCLICK);
+		return false;
+	}
 	if (p.x < 0)
 	{
 		setClickType(Click::RIGHT);
@@ -115,11 +123,8 @@ bool FakeCursor::checkLimits(Point p)
 
 void FakeCursor::update()
 {		
-	if (!wii)
-		return;
-	
-	if (state != ACTIVE)
-		return;
+	if (!wii) return;
+	if (state != ACTIVE) return;
 	
 	if (wii->dataReady())
 	{
@@ -136,14 +141,11 @@ void FakeCursor::update()
 	}
 	else
 	{
-		if (click)
+		if ((click) && (!click->refresh(false)))
 		{
-			if (!click->refresh(false))
-			{
-				clickType = Click::LEFT;
-				delete click;
-				click = 0;
-			}
+			clickType = Click::LEFT;
+			delete click;
+			click = 0;
 		}
 	}
 	
