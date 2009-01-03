@@ -25,6 +25,8 @@ void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 	}
 };
 
+#define INVALID_COORD -1000
+
 
 Wiimote::Wiimote()
 {
@@ -33,6 +35,7 @@ Wiimote::Wiimote()
 	button = 0;
 	wiimote = 0;
 	newData = 0;
+	oldPoint.x = oldPoint.y = INVALID_COORD;
 }
 
 bool Wiimote::connection()
@@ -57,14 +60,20 @@ bool Wiimote::connection()
 	return true;
 }
 
+
+int sqdist(Point &p, int x, int y)
+{
+	return ((p.x-x)*(p.x-x) + (p.y-y)*(p.y-y));
+}
+
+
+
 bool Wiimote::getMsgs()
 {
 	int msg_count = 0;
 	cwiid_mesg *mesg = 0;
 	timespec tspec;
 	cwiid_get_mesg(wiimote, &msg_count, &mesg, &tspec);
-	//std::cout << "Msgs: " << msg_count << "\n";
-	//std::cout << "Msgs: " << mesg << "\n";
 	
 	int valid_source = 0;
 	int i,j;
@@ -76,22 +85,18 @@ bool Wiimote::getMsgs()
 			pressButton();
 			break;
 		case CWIID_MESG_IR:
-			valid_source = 0;
-			static int v[8];
-			for (j = 0; j < CWIID_IR_SRC_COUNT; j++) {
-				if (mesg[i].ir_mesg.src[j].valid) {
-					valid_source = 1;
-					v[j*2] = mesg[i].ir_mesg.src[j].pos[CWIID_X];
-					v[j*2+1] = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
-				}
-				else v[j*2] = v[j*2+1] = 0;
-			}
-			if (valid_source)
+			static Point p;
+			int dist;
+			for (j = 0; j < CWIID_IR_SRC_COUNT; j++) 
 			{
-				irData(v);
-				return true;
+				if (mesg[i].ir_mesg.src[j].valid) 
+				{
+					p.x = mesg[i].ir_mesg.src[j].pos[CWIID_X];
+					p.y = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
+					irData(p);
+					return true;
+				}
 			}
-
 			break;
 		case CWIID_MESG_ERROR:
 			if (cwiid_disconnect(wiimote)) {
@@ -130,23 +135,25 @@ bool Wiimote::dataReady()
 	return false;
 }
 
-void Wiimote::irData(int *v)
+void Wiimote::irData(Point &pt)
 {
 	switch(state)
 	{
 		case (CONNECTED):
-			p.x = v[0];
-			p.y = v[1];
+			p = pt;
 			break;
 		
 		case (CALIBRATED):
-			p.x =  (int) ( ( (float)  (h11*v[0] + h12*v[1] + h13) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
-			p.y =  (int) ( ( (float)  (h21*v[0] + h22*v[1] + h23) ) / ( (float) (h31*v[0] + h32*v[1] + 1) ) );
+			p.x =  (int) ( ( (float)  (h11*pt.x + h12*pt.y + h13) ) / ( (float) (h31*pt.x + h32*pt.y + 1) ) );
+			p.y =  (int) ( ( (float)  (h21*pt.x + h22*pt.y + h23) ) / ( (float) (h31*pt.x + h32*pt.y + 1) ) );
 			break;
 			
 		default:
 			break;
 	}
+	
+	oldPoint = pt;
+	
 	newData = 1;
 }
 

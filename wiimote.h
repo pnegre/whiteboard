@@ -17,6 +17,7 @@ class Wiimote
 	typedef enum { DISCONNECTED, CONNECTED, CALIBRATED } state_t;
 	state_t state;
 	Point p;
+	Point oldPoint;
 	// Calibration data
 	float h11,h12,h13,h21,h22,h23,h31,h32;
 	
@@ -35,7 +36,7 @@ class Wiimote
 	bool endConnection();
 	bool isButtonPressed();
 	bool dataReady();
-	void irData(int *v);
+	void irData(Point &pt);
 	void calibrate(Point p_screen[], Point p_wii[]);
 	Point getPos();
 	void pressButton();
