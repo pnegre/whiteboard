@@ -72,33 +72,24 @@ bool Wiimote::getMsgs()
 	{
 		switch (mesg[i].type) {
 		case CWIID_MESG_BTN:
-			//std::cout << "EE\n";
 			printf("Button Report: %.4X\n", mesg[i].btn_mesg.buttons);
 			pressButton();
 			break;
 		case CWIID_MESG_IR:
-			//std::cout << "II\n";
 			valid_source = 0;
 			static int v[8];
 			for (j = 0; j < CWIID_IR_SRC_COUNT; j++) {
-				//std::cout << j << "\n";
 				if (mesg[i].ir_mesg.src[j].valid) {
 					valid_source = 1;
-					//printf("(%d,%d) \n\n", mesg[i].ir_mesg.src[j].pos[CWIID_X],
-					//                   mesg[i].ir_mesg.src[j].pos[CWIID_Y]);
 					v[j*2] = mesg[i].ir_mesg.src[j].pos[CWIID_X];
 					v[j*2+1] = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
 				}
 				else v[j*2] = v[j*2+1] = 0;
 			}
-			if (!valid_source) {
-				//printf("no sources detected\n");
-			}
-			else
+			if (valid_source)
 			{
 				irData(v);
 				return true;
-				//std::cout << "OO\n";
 			}
 
 			break;
