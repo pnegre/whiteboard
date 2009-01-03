@@ -7,9 +7,7 @@ extern "C" {
 	#include "matrix.h"
 }
 
-#include "point.h"
 
-#include "cwiid.h"
 
 
 

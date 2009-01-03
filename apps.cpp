@@ -28,9 +28,9 @@ namespace Timer
 
 #include <SDL.h>
 #include <X11/Xlib.h>
+
 #include "calibration.h"
 #include "point.h"
-
 #include "wiimote.h"
 
 
