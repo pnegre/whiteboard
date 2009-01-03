@@ -16,6 +16,9 @@
  *
  */
 
+#ifndef _MATRIX_H_INCLUDED_
+#define _MATRIX_H_INCLUDED_
+
 
 
 #include <stdio.h>
@@ -34,6 +37,17 @@ extern float        matrixGetElement(matrix_t *m, int i, int j);
 extern void         matrixSetElement(matrix_t *m, float e, int i, int j);
 extern void         matrixInverse(matrix_t *m);
 extern matrix_t *   matrixMultiply(matrix_t *m, matrix_t *n);
+
+
+
+
+
+
+
+
+
+
+#endif
 
 
  
