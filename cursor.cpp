@@ -19,6 +19,8 @@
 #include "cursor.h"
 #include "timer.h"
 
+#include <iostream>
+
 #include <list>
 
 
@@ -33,10 +35,14 @@ namespace Filter
 		cache.clear();
 	}
 	
-	
-	Point average()
+	Point process(const Point p)
 	{
+		cache.push_back(p);
+		if (cache.size() > MAXPOINTS)
+			cache.pop_front();
+		
 		Point ret;
+		ret.x = ret.y = 0;
 		
 		for (std::list<Point>::const_iterator i = cache.begin(); 
 			i != cache.end(); ++i) 
@@ -45,20 +51,12 @@ namespace Filter
 			ret.y += i->y;
 		}
 		
-		ret.x /= cache.size();
-		ret.y /= cache.size();
+		// We need to cast cache.size() because if not, the result
+		// is always unsigned
+		ret.x /= (int) cache.size();
+		ret.y /= (int) cache.size();
 		
 		return ret;
-	}
-	
-	
-	Point process(const Point &p)
-	{
-		cache.push_back(p);
-		if (cache.size() > MAXPOINTS)
-			cache.pop_front();
-		
-		return average();
 	}
 }
 
@@ -190,6 +188,9 @@ void FakeCursor::update()
 	
 	if (wii->dataReady())
 	{
+		if (!click)
+			Filter::init();
+		
 		Point p = Filter::process(wii->getPos());
 		
 		if ((!click) && (checkLimits(p) == false))
@@ -209,7 +210,7 @@ void FakeCursor::update()
 			clickType = Click::LEFT;
 			delete click;
 			click = 0;
-			Filter::init();
+// 			Filter::init();
 		}
 	}
 	

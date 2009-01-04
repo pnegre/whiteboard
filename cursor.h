@@ -31,7 +31,7 @@ class Click
 {
 	public:
 		
-	typedef enum { LEFT = 1, RIGHT=3, DOUBLE, NOCLICK } but_t;
+	typedef enum { LEFT, RIGHT, DOUBLE, NOCLICK } but_t;
 	
 	protected:
 	
