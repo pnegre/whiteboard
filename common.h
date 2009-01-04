@@ -1,5 +1,5 @@
-#ifndef _TIMER_H_INCLUDED_
-#define _TIMER_H_INCLUDED_
+#ifndef _COMMON_H_INCLUDED_
+#define _COMMON_H_INCLUDED_
 
  /* Copyright (C) 2008 Pere Negre
  *
@@ -25,6 +25,19 @@ namespace Timer
 {
 	unsigned long getTicks();
 	void start();
+}
+
+
+class Point
+{
+	public:
+	int x, y;
+};
+
+namespace Scr
+{
+	int getScreenWidth();
+	int getScreenHeight();
 }
 
 

@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <iostream>
 
+#include "common.h"
 
 #include "calibration.h"
 #include "wiimote.h"
-#include "timer.h"
 #include "cursor.h"
 
 

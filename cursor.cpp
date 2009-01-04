@@ -17,17 +17,10 @@
  */
 
 #include "cursor.h"
-#include "timer.h"
+#include "common.h"
 
 #include <iostream>
 #include <list>
-
-
-namespace Scr
-{
-	int getScreenWidth();
-	int getScreenHeight();
-}
 
 
 #define MAXPOINTS 5

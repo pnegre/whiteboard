@@ -21,7 +21,7 @@
 
 
 #include "cwiid.h"
-#include "point.h"
+#include "common.h"
 
 
 #define MAX_WII_X 1020

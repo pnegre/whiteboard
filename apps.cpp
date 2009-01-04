@@ -20,6 +20,8 @@
 #include <sys/time.h>
 #include <X11/Xlib.h>
 
+#include "common.h"
+
 namespace Scr
 {
 	int x=0;
@@ -79,7 +81,6 @@ namespace Timer
 #include <iostream>
 
 #include "calibration.h"
-#include "point.h"
 #include "wiimote.h"
 
 
