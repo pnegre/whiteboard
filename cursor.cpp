@@ -2,6 +2,50 @@
 #include "cursor.h"
 #include "timer.h"
 
+#include <list>
+
+
+#define MAXPOINTS 5
+
+namespace Filter
+{
+	std::list<Point> cache;
+	
+	void init()
+	{
+		cache.clear();
+	}
+	
+	
+	Point average()
+	{
+		Point ret;
+		
+		for (std::list<Point>::const_iterator i = cache.begin(); 
+			i != cache.end(); ++i) 
+		{
+			ret.x += i->x;
+			ret.y += i->y;
+		}
+		
+		ret.x /= cache.size();
+		ret.y /= cache.size();
+		
+		return ret;
+	}
+	
+	
+	Point process(const Point &p)
+	{
+		cache.push_back(p);
+		if (cache.size() > MAXPOINTS)
+			cache.pop_front();
+		
+		return average();
+	}
+}
+
+
 
 
 Click::Click(but_t b)
@@ -9,6 +53,7 @@ Click::Click(but_t b)
 	initialTime = Timer::getTicks();
 	but = b;
 	button(true);
+	Filter::init();
 }
 
 bool Click::refresh(bool evt)
@@ -128,7 +173,8 @@ void FakeCursor::update()
 	
 	if (wii->dataReady())
 	{
-		Point p = wii->getPos();
+		Point p = Filter::process(wii->getPos());
+		
 		if ((!click) && (checkLimits(p) == false))
 			return;
 		
@@ -146,6 +192,7 @@ void FakeCursor::update()
 			clickType = Click::LEFT;
 			delete click;
 			click = 0;
+			Filter::init();
 		}
 	}
 	
