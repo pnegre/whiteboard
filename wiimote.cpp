@@ -61,9 +61,9 @@ bool Wiimote::connection()
 }
 
 
-int sqdist(Point &p, int x, int y)
+int sqdist(Point &p, Point &q)
 {
-	return ((p.x-x)*(p.x-x) + (p.y-y)*(p.y-y));
+	return ((p.x-q.x)*(p.x-q.x) + (p.y-q.y)*(p.y-q.y));
 }
 
 
@@ -75,7 +75,6 @@ bool Wiimote::getMsgs()
 	timespec tspec;
 	cwiid_get_mesg(wiimote, &msg_count, &mesg, &tspec);
 	
-	int valid_source = 0;
 	int i,j;
 	for (i=0; i < msg_count; i++)
 	{
@@ -86,16 +85,32 @@ bool Wiimote::getMsgs()
 			break;
 		case CWIID_MESG_IR:
 			static Point p;
+			Point q;
+			int validData;
 			int dist;
+			dist = -1;
+			validData = 0;
 			for (j = 0; j < CWIID_IR_SRC_COUNT; j++) 
 			{
 				if (mesg[i].ir_mesg.src[j].valid) 
 				{
-					p.x = mesg[i].ir_mesg.src[j].pos[CWIID_X];
-					p.y = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
-					irData(p);
-					return true;
+					validData = 1;
+					q.x = mesg[i].ir_mesg.src[j].pos[CWIID_X];
+					q.y = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
+					if (oldPoint.x == INVALID_COORD)
+					{
+						p = q;
+						irData(p);
+						return true;
+					}
+					int d = sqdist(q,oldPoint);
+					if ((dist == -1) || (d < dist)) { p = q; dist = d; }
 				}
+			}
+			if (validData)
+			{
+				irData(p);
+				return true;
 			}
 			break;
 		case CWIID_MESG_ERROR:
@@ -144,8 +159,10 @@ void Wiimote::irData(Point &pt)
 			break;
 		
 		case (CALIBRATED):
-			p.x =  (int) ( ( (float)  (h11*pt.x + h12*pt.y + h13) ) / ( (float) (h31*pt.x + h32*pt.y + 1) ) );
-			p.y =  (int) ( ( (float)  (h21*pt.x + h22*pt.y + h23) ) / ( (float) (h31*pt.x + h32*pt.y + 1) ) );
+			p.x =  (int) ( ( (float)  (h11*pt.x + h12*pt.y + h13) ) / 
+				( (float) (h31*pt.x + h32*pt.y + 1) ) );
+			p.y =  (int) ( ( (float)  (h21*pt.x + h22*pt.y + h23) ) / 
+				( (float) (h31*pt.x + h32*pt.y + 1) ) );
 			break;
 			
 		default:
@@ -153,7 +170,6 @@ void Wiimote::irData(Point &pt)
 	}
 	
 	oldPoint = pt;
-	
 	newData = 1;
 }
 
