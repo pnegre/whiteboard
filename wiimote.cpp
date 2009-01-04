@@ -42,8 +42,6 @@ void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 	}
 };
 
-#define INVALID_COORD -1000
-
 
 Wiimote::Wiimote()
 {
@@ -52,7 +50,7 @@ Wiimote::Wiimote()
 	button = 0;
 	wiimote = 0;
 	newData = 0;
-	oldPoint.x = oldPoint.y = INVALID_COORD;
+	oldPoint.x = oldPoint.y = 0;
 }
 
 bool Wiimote::connection()
@@ -114,12 +112,7 @@ bool Wiimote::getMsgs()
 					validData = 1;
 					q.x = mesg[i].ir_mesg.src[j].pos[CWIID_X];
 					q.y = mesg[i].ir_mesg.src[j].pos[CWIID_Y];
-					if (oldPoint.x == INVALID_COORD)
-					{
-						p = q;
-						irData(p);
-						return true;
-					}
+					
 					int d = sqdist(q,oldPoint);
 					if ((dist == -1) || (d < dist)) { p = q; dist = d; }
 				}
