@@ -20,8 +20,14 @@
 #include "timer.h"
 
 #include <iostream>
-
 #include <list>
+
+
+namespace Scr
+{
+	int getScreenWidth();
+	int getScreenHeight();
+}
 
 
 #define MAXPOINTS 5
@@ -163,21 +169,31 @@ void FakeCursor::setClickType(Click::but_t c)
 
 bool FakeCursor::checkLimits(Point p)
 {
-	if ((p.x < 0) && (p.y < 0))
-	{
-		setClickType(Click::NOCLICK);
-		return false;
-	}
 	if (p.x < 0)
 	{
+		// A ZONE
 		setClickType(Click::RIGHT);
 		return false;	
 	}
 	if (p.y < 0)
 	{
+		// B ZONE
 		setClickType(Click::DOUBLE);
 		return false;
 	}
+	if (p.x > Scr::getScreenWidth())
+	{
+		// C ZONE
+		setClickType(Click::NOCLICK);
+		return false;
+	}
+	if (p.y > Scr::getScreenHeight())
+	{
+		// D ZONE
+		setClickType(Click::NOCLICK);
+		return false;
+	}
+	
 	return true;
 }
 

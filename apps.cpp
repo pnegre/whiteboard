@@ -18,6 +18,37 @@
 
 
 #include <sys/time.h>
+#include <X11/Xlib.h>
+
+namespace Scr
+{
+	int x=0;
+	int y=0;
+	
+	int getScreenWidth()
+	{
+		if (x)
+			return x;
+		
+		Display* display = XOpenDisplay(0);
+		int screen = DefaultScreen(display);
+		x = DisplayWidth(display,screen);
+		XCloseDisplay(display);
+		return x;
+	}
+	
+	int getScreenHeight()
+	{
+		if (y)
+			return y;
+		
+		Display* display = XOpenDisplay(0);
+		int screen = DefaultScreen(display);
+		y = DisplayHeight(display,screen);
+		XCloseDisplay(display);
+		return y;
+	}
+}
 
 
 namespace Timer
@@ -45,7 +76,6 @@ namespace Timer
 
 
 #include <SDL.h>
-#include <X11/Xlib.h>
 #include <iostream>
 
 #include "calibration.h"
@@ -113,11 +143,8 @@ namespace Calibration
 		int t=0;
 		float xm1,ym1,xm2,ym2;
 		
-		Display* display = XOpenDisplay(0);
-		int screen = DefaultScreen(display);	
-		int SIZEX = DisplayWidth(display,screen);
-		int SIZEY = DisplayHeight(display,screen);
-		XCloseDisplay(display);
+		int SIZEX = Scr::getScreenWidth();
+		int SIZEY = Scr::getScreenHeight();
 		
 		SDL_Init(SDL_INIT_VIDEO);
 		s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
