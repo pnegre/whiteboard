@@ -1,3 +1,6 @@
+#ifndef _MATRIX_H_INCLUDED_
+#define _MATRIX_H_INCLUDED_
+ 
  /* Copyright (C) 2008 Pere Negre
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -15,9 +18,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-
-#ifndef _MATRIX_H_INCLUDED_
-#define _MATRIX_H_INCLUDED_
 
 
 
