@@ -26,7 +26,7 @@ class Wiimote;
 
 namespace Calibration
 {
-	bool do_calibration(Wiimote *w);
+	bool do_calibration(Wiimote &w);
 }
 
 #endif

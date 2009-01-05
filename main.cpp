@@ -37,12 +37,17 @@ int main(int argc,char *argv[])
 	if (!wiim.connection())
 		exit(1);
 	
-	if (!Calibration::do_calibration(&wiim))
+	if (!Calibration::do_calibration(wiim))
 		exit(1);
 	
 	wiim.getMsgs();
 	
 	FakeCursor cursor;
+	
+	cursor.configureLimit(FakeCursor::ZONE_A, Click::RIGHT);
+	cursor.configureLimit(FakeCursor::ZONE_B, Click::DOUBLE);
+	cursor.configureLimit(FakeCursor::ZONE_D, Click::NOCLICK);
+	
 	cursor.attachWiimote(&wiim);
 	cursor.activate();
 	

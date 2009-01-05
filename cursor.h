@@ -51,6 +51,10 @@ class Click
 
 class FakeCursor
 {
+	public:
+		
+	typedef enum { ZONE_A, ZONE_B, ZONE_C, ZONE_D } zone_t;
+	
 	protected:
 	
 	Display *display;
@@ -61,7 +65,9 @@ class FakeCursor
 	
 	Click::but_t clickType;
 	Click *click;
-
+	
+	Click::but_t zoneAClick, zoneBClick, zoneCClick, zoneDClick;
+	
 	public:
 	
 	FakeCursor();
@@ -73,6 +79,7 @@ class FakeCursor
 	bool checkLimits(Point p);
 	void update();
 	void move(Point p);
+	void configureLimit(zone_t z, Click::but_t c);
 	
 };
 

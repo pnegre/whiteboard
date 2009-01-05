@@ -133,6 +133,7 @@ FakeCursor::FakeCursor()
 	wii = 0;
 	click = 0;
 	setClickType(Click::LEFT);
+	zoneAClick = zoneBClick = zoneCClick = zoneDClick = Click::RIGHT;
 }
 
 void FakeCursor::attachWiimote(Wiimote *wiim)
@@ -160,30 +161,45 @@ void FakeCursor::setClickType(Click::but_t c)
 	clickType = c;
 }
 
+void FakeCursor::configureLimit(zone_t z, Click::but_t c)
+{
+	switch (z)
+	{
+		case ZONE_A:
+			zoneAClick = c;
+		case ZONE_B:
+			zoneBClick = c;
+		case ZONE_C:
+			zoneCClick = c;
+		case ZONE_D:
+			zoneDClick = c;
+	}
+}
+
 bool FakeCursor::checkLimits(Point p)
 {
 	if (p.x < 0)
 	{
 		// A ZONE
-		setClickType(Click::RIGHT);
+		setClickType(zoneAClick);
 		return false;	
 	}
 	if (p.y < 0)
 	{
 		// B ZONE
-		setClickType(Click::DOUBLE);
+		setClickType(zoneBClick);
 		return false;
 	}
 	if (p.x > Scr::getScreenWidth())
 	{
 		// C ZONE
-		setClickType(Click::NOCLICK);
+		setClickType(zoneCClick);
 		return false;
 	}
 	if (p.y > Scr::getScreenHeight())
 	{
 		// D ZONE
-		setClickType(Click::NOCLICK);
+		setClickType(zoneDClick);
 		return false;
 	}
 	

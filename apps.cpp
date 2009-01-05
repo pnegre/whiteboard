@@ -133,7 +133,7 @@ namespace Calibration
 			pixel(x+i,y);
 	}
 
-	bool do_calibration(Wiimote *w)
+	bool do_calibration(Wiimote &w)
 	{
 		SDL_Event e;
 		Uint32 black_color;
@@ -180,10 +180,10 @@ namespace Calibration
 		t = 0;
 		while(1)
 		{
-			if (w->getMsgs())
+			if (w.getMsgs())
 			{
 // 				std::cout << "IR MSG\n";
-				wiiP = w->getPos();
+				wiiP = w.getPos();
 			}
  			else
  				SDL_Delay(50);
@@ -239,7 +239,7 @@ namespace Calibration
 			return false;
 		
 		std::cout << "Calculating coefficients...";
-		w->calibrate(p_screen, p_wii);
+		w.calibrate(p_screen, p_wii);
 		std::cout << "Done!\n";
 		
 		return true;
