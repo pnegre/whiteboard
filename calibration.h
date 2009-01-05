@@ -26,6 +26,7 @@ class Wiimote;
 
 namespace Calibration
 {
+	class Error {};
 	bool do_calibration(Wiimote &w);
 }
 

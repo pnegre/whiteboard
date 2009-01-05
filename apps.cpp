@@ -236,7 +236,7 @@ namespace Calibration
 		std::cout << "Done\n";
 
 		if (!ok)
-			return false;
+			throw Error();
 		
 		std::cout << "Calculating coefficients...";
 		w.calibrate(p_screen, p_wii);

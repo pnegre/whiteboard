@@ -30,36 +30,42 @@
 
 int main(int argc,char *argv[])
 {
-	Wiimote wiim;
-	
 	Timer::start();
 	
-	if (!wiim.connection())
-		exit(1);
-	
-	if (!Calibration::do_calibration(wiim))
-		exit(1);
-	
-	wiim.getMsgs();
-	
-	FakeCursor cursor;
-	
-	cursor.configureLimit(FakeCursor::ZONE_A, Click::RIGHT);
-	cursor.configureLimit(FakeCursor::ZONE_B, Click::DOUBLE);
-	cursor.configureLimit(FakeCursor::ZONE_D, Click::NOCLICK);
-	
-	cursor.attachWiimote(&wiim);
-	cursor.activate();
-	
-	while (!wiim.isButtonPressed())
+	try
 	{
-		wiim.getMsgs();
-		cursor.update();
-	}
-	
-	wiim.endConnection();
+		Wiimote wiim;
+		wiim.connection();
+		
+		Calibration::do_calibration(wiim);
+		
+		FakeCursor cursor;
+		cursor.configureLimit(FakeCursor::ZONE_A, Click::RIGHT);
+		cursor.configureLimit(FakeCursor::ZONE_B, Click::DOUBLE);
+		cursor.configureLimit(FakeCursor::ZONE_D, Click::NOCLICK);
+		cursor.attachWiimote(&wiim);
+		cursor.activate();
+		
+		while (!wiim.isButtonPressed())
+		{
+			wiim.getMsgs();
+			cursor.update();
+		}
+		
+		wiim.endConnection();
 
-	return 0;
+		return 0;
+	}
+	catch (Wiimote::ErrorConnection)
+	{
+		std::cout << "There was a problem connecting to the wiimote(s)\n";
+		return 1;
+	}
+	catch (Calibration::Error)
+	{
+		std::cout << "Error (or abort) during calibration\n";
+		return 1;
+	}
 }
 
 

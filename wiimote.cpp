@@ -24,18 +24,19 @@ extern "C" {
 	#include "matrix.h"
 }
 
+#include <iostream>
 
 
 
 
-void set_led_state(cwiid_wiimote_t *wiimote, unsigned char led_state)
+static void set_led_state(cwiid_wiimote_t *wiimote, unsigned char led_state)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_LED, led_state)) {
 		fprintf(stderr, "Error setting LEDs \n");
 	}
 }
 	
-void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
+static void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
 		fprintf(stderr, "Error setting report mode\n");
@@ -58,12 +59,11 @@ bool Wiimote::connection()
 	bdaddr_t bdaddr;
 	bdaddr = *BDADDR_ANY;
 
-	printf("Put Wiimote in discoverable mode now (press 1+2)...\n");
+	std::cout << "Put Wiimote in discoverable mode now (press 1+2)...\n";
 	if (!(wiimote = cwiid_connect(&bdaddr, 0))) {
-			fprintf(stderr, "Unable to connect to wiimote\n");
-			return false;
+			throw (ErrorConnection());
 	}
-	printf("Connected!\n");
+	std::cout << "Connected!\n";
 	
 	set_led_state(wiimote, CWIID_LED1_ON);
 	set_rpt_mode(wiimote, CWIID_RPT_IR | CWIID_RPT_BTN);
@@ -76,7 +76,7 @@ bool Wiimote::connection()
 }
 
 
-int sqdist(Point &p, Point &q)
+static int sqdist(Point &p, Point &q)
 {
 	return ((p.x-q.x)*(p.x-q.x) + (p.y-q.y)*(p.y-q.y));
 }

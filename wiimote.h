@@ -50,6 +50,8 @@ class Wiimote
 	void pressButton();
 	
 	public:
+		
+	class ErrorConnection {};
 
 	Wiimote();
 	bool connection();
