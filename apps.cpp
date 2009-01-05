@@ -94,7 +94,9 @@ namespace Calibration
 		Uint32 *m;
 		y *= s->w;
 		m = (Uint32*) s->pixels + y + x;
+		SDL_LockSurface(s);
 		*m = SDL_MapRGB(s->format,255,255,255);
+		SDL_UnlockSurface(s);
 	}
 
 
