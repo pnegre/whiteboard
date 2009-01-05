@@ -45,7 +45,10 @@ class Wiimote
 	struct cwiid_state wiiState;
 	
 	int newData;
-
+	
+	void irData(Point &pt);
+	void pressButton();
+	
 	public:
 
 	Wiimote();
@@ -54,10 +57,9 @@ class Wiimote
 	bool endConnection();
 	bool isButtonPressed();
 	bool dataReady();
-	void irData(Point &pt);
 	void calibrate(Point p_screen[], Point p_wii[]);
 	Point getPos();
-	void pressButton();
+	
 };
 
 

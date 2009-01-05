@@ -68,6 +68,10 @@ class FakeCursor
 	
 	Click::but_t zoneAClick, zoneBClick, zoneCClick, zoneDClick;
 	
+	bool checkLimits(Point p);
+	void move(Point p);
+	void setClickType(Click::but_t c);
+	
 	public:
 	
 	FakeCursor();
@@ -75,10 +79,7 @@ class FakeCursor
 	Wiimote *getWii();
 	void activate();
 	void deactivate();
-	void setClickType(Click::but_t c);
-	bool checkLimits(Point p);
 	void update();
-	void move(Point p);
 	void configureLimit(zone_t z, Click::but_t c);
 	
 };
