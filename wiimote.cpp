@@ -33,7 +33,7 @@ extern "C" {
 void Wiimote::setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_LED, led_state)) {
-		fprintf(stderr, "Error setting LEDs \n");
+		endConnection();
 		throw ErrorOther();
 	}
 }
@@ -41,7 +41,7 @@ void Wiimote::setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state)
 void Wiimote::setRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
-		fprintf(stderr, "Error setting report mode\n");
+		endConnection();
 		throw ErrorOther();
 	}
 }
@@ -64,7 +64,7 @@ bool Wiimote::connection()
 
 	std::cout << "Put Wiimote in discoverable mode now (press 1+2)...\n";
 	if (!(wiimote = cwiid_connect(&bdaddr, 0))) {
-			throw (ErrorConnection());
+			throw ErrorConnection();
 	}
 	std::cout << "Connected!\n";
 	
@@ -126,13 +126,11 @@ bool Wiimote::getMsgs()
 				return true;
 			}
 			break;
+			
 		case CWIID_MESG_ERROR:
-			if (cwiid_disconnect(wiimote)) {
-				fprintf(stderr, "Error on wiimote disconnect\n");
-				exit(-1);
-			}
-			exit(0);
-			break;
+			endConnection();
+			throw ErrorMsg();
+			
 		default:
 			break;
 		}
@@ -144,7 +142,9 @@ bool Wiimote::getMsgs()
 
 bool Wiimote::endConnection()
 {
-	cwiid_disconnect(wiimote);
+	if (wiimote)
+		if (cwiid_disconnect(wiimote))
+			throw ErrorDisconnect();
 	state = DISCONNECTED;
 }
 

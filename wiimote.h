@@ -55,6 +55,8 @@ class Wiimote
 		
 	class Error {};
 	class ErrorConnection: public Error {};
+	class ErrorMsg: public Error {};
+	class ErrorDisconnect: public Error {};
 	class ErrorOther: public Error {};
 
 	Wiimote();
