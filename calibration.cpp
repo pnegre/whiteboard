@@ -18,6 +18,7 @@
 
 
 #include <SDL.h>
+#include <SDL_gfxPrimitives.h>
 #include <iostream>
 
 #include "calibration.h"
@@ -28,57 +29,31 @@
 namespace Calibration
 {
 	SDL_Surface *s;
-	
-	void pixel(int x, int y)
-	{
-		Uint32 *m;
-		y *= s->w;
-		m = (Uint32*) s->pixels + y + x;
-		SDL_LockSurface(s);
-		*m = SDL_MapRGB(s->format,255,255,255);
-		SDL_UnlockSurface(s);
-	}
-
-
-
 
 	void draw_point(Point *p)
 	{
-		int i;
-		for (i=p->x-10; i<p->x+10; i++)
-			pixel(i,p->y);
+		aalineRGBA(s, p->x-5, p->y-5, p->x+5, p->y+5, 255,255,255,255);
+		aalineRGBA(s, p->x-5, p->y+5, p->x+5, p->y-5, 255,255,255,255);
 		
-		for (i=p->y-10; i<p->y+10; i++)
-			pixel(p->x,i);
 	}
-
 
 	void draw_square(Point *p)
-	{
-		int i;
-		for (i=p->x-10; i<p->x+10; i++)
-			pixel(i,p->y+10), pixel(i,p->y-10);
-
-			for (i=p->y-10; i<p->y+10; i++)
-					pixel(p->x-10,i), pixel(p->x+10,i);
+	{		
+		rectangleRGBA(s, p->x-10, p->y-10, p->x+10, p->y+10, 255,255,255,255);
 
 	}
-
 
 	void draw_cross(int x, int y)
 	{
-		int x1,y1;
-		int i;
-		for(i=-5; i<=5; i++)
-			pixel(x,y+i);
-		for(i=-5; i<=5; i++)
-			pixel(x+i,y);
+		aalineRGBA(s, x-5, y, x+5, y, 255,255,255,255);
+		aalineRGBA(s, x, y-5, x, y+5, 255,255,255,255);
+
 	}
 
 	void calibrate(Wiimote &w)
 	{
 		SDL_Event e;
-		Uint32 black_color;
+		Uint32 black_color, white_color;
 		Uint8 *k;
 		int state = 0;
 		int ok=1;
@@ -92,6 +67,7 @@ namespace Calibration
 		SDL_Init(SDL_INIT_VIDEO);
 		s = SDL_SetVideoMode(SIZEX,SIZEY,0,SDL_HWSURFACE | SDL_FULLSCREEN | SDL_DOUBLEBUF);
 		black_color = SDL_MapRGB(s->format,0,0,0);
+		white_color = SDL_MapRGB(s->format,255,0,0);
 
 		Point p_screen[4];
 		Point p_wii[4];
@@ -136,11 +112,7 @@ namespace Calibration
 			if (state >= 4) 
 				break;
 
-			for (i = (int) xm1; i < (int) xm2; i++)
-				pixel(i,ym1), pixel(i,ym2);
-
-			for (i = (int) ym1; i < (int) ym2; i++)
-				pixel(xm1,i), pixel(xm2,i);
+			rectangleRGBA(s,xm1,ym1,xm2,ym2, 255,255,255,255);
 
 			draw_cross(
 				xm1 + (int) ( ((float) wiiP.x / (float) MAX_WII_X )*200),
@@ -155,13 +127,20 @@ namespace Calibration
 			if (state<4)
 				for(i=0; i<state; i++)
 					draw_square(&p_screen[i]);
+			
+			if (state>0)
+			{
+				for (int i=0; i<state; i++)
+					lineRGBA(s,p_wii[i].x,p_wii[i].y,
+							   p_wii[i+1].x,p_wii[i+1].y,
+							   255,255,255,255);
+			}
 
 			if ((state<4)) 
 				draw_square(&p_screen[state]);
 
 			t = ~ t; 
 
-			//SDL_UpdateRect(s,0,0,0,0);
 			SDL_Flip(s);
 			//SDL_Delay(100);
 			SDL_FillRect(s,0,black_color);

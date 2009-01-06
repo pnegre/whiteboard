@@ -9,7 +9,8 @@ env.Append(CCFLAGS = '-g')
 deps = (
 	'Xtst',
 	'SDL',
-	'cwiid'
+	'cwiid',
+	'SDL_gfx'
 )
 
 conf = Configure(env)
@@ -27,7 +28,6 @@ libs = (
 for l in libs:
 	env.ParseConfig('pkg-config ' + l + ' --cflags --libs')
 
-env.Append(LIBS = ['cwiid'])
 
 env.Program('whiteboard', Glob('*.c*'))
 
