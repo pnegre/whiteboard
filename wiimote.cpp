@@ -29,21 +29,6 @@ extern "C" {
 
 
 
-// static void set_led_state(cwiid_wiimote_t *wiimote, unsigned char led_state)
-// {
-// 	if (cwiid_command(wiimote, CWIID_CMD_LED, led_state)) {
-// 		fprintf(stderr, "Error setting LEDs \n");
-// 	}
-// }
-// 	
-// static void set_rpt_mode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
-// {
-// 	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
-// 		fprintf(stderr, "Error setting report mode\n");
-// 	}
-// }
-
-
 
 void Wiimote::setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state)
 {
@@ -52,7 +37,7 @@ void Wiimote::setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state)
 	}
 }
 	
-void Wiimote::SetRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
+void Wiimote::setRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
 		fprintf(stderr, "Error setting report mode\n");
@@ -82,7 +67,7 @@ bool Wiimote::connection()
 	std::cout << "Connected!\n";
 	
 	setLedState(wiimote, CWIID_LED1_ON);
-	SetRptMode(wiimote, CWIID_RPT_IR | CWIID_RPT_BTN);
+	setRptMode(wiimote, CWIID_RPT_IR | CWIID_RPT_BTN);
 	cwiid_enable(wiimote, CWIID_FLAG_MESG_IFC);
 	cwiid_disable(wiimote, CWIID_FLAG_NONBLOCK);
 	cwiid_disable(wiimote, CWIID_FLAG_CONTINUOUS);

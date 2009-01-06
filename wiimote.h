@@ -49,7 +49,7 @@ class Wiimote
 	void pressButton();
 	
 	void setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state);
-	void SetRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode);
+	void setRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode);
 	
 	public:
 		
