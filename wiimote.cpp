@@ -63,9 +63,9 @@ bool Wiimote::connection()
 	bdaddr = *BDADDR_ANY;
 
 	std::cout << "Put Wiimote in discoverable mode now (press 1+2)...\n";
-	if (!(wiimote = cwiid_connect(&bdaddr, 0))) {
+	if (!(wiimote = cwiid_connect(&bdaddr, 0)))
 			throw ErrorConnection();
-	}
+
 	std::cout << "Connected!\n";
 	
 	setLedState(wiimote, CWIID_LED1_ON);
@@ -94,6 +94,9 @@ bool Wiimote::getMsgs()
 	cwiid_get_mesg(wiimote, &msg_count, &mesg, &tspec);
 	
 	int i,j;
+	Point p,q;
+	int validData;
+	int dist;
 	for (i=0; i < msg_count; i++)
 	{
 		switch (mesg[i].type) {
@@ -102,10 +105,6 @@ bool Wiimote::getMsgs()
 			pressButton();
 			break;
 		case CWIID_MESG_IR:
-			static Point p;
-			Point q;
-			int validData;
-			int dist;
 			dist = -1;
 			validData = 0;
 			for (j = 0; j < CWIID_IR_SRC_COUNT; j++) 
