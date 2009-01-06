@@ -42,12 +42,14 @@ class Wiimote
 	int button;
 	
 	cwiid_wiimote_t *wiimote;
-	struct cwiid_state wiiState;
 	
 	int newData;
 	
 	void irData(Point &pt);
 	void pressButton();
+	
+	void setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state);
+	void SetRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode);
 	
 	public:
 		

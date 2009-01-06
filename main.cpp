@@ -37,7 +37,7 @@ int main(int argc,char *argv[])
 		Wiimote wiim;
 		wiim.connection();
 		
-		Calibration::do_calibration(wiim);
+		Calibration::calibrate(wiim);
 		
 		FakeCursor cursor;
 		cursor.configureLimit(FakeCursor::ZONE_A, Click::RIGHT);
