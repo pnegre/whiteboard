@@ -161,14 +161,12 @@ namespace Calibration
 
 		p_screen[1].x = SIZEX - 50;
 		p_screen[1].y = 50;
-
-		p_screen[2].x = 50;
+		
+		p_screen[2].x = SIZEX - 50;
 		p_screen[2].y = SIZEY - 50;
 
-		p_screen[3].x = SIZEX - 50;
+		p_screen[3].x = 50;
 		p_screen[3].y = SIZEY - 50;
-		
-		
 
 		SDL_FillRect(s,0,black_color);
 
