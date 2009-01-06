@@ -128,13 +128,13 @@ namespace Calibration
 				for(i=0; i<state; i++)
 					draw_square(&p_screen[i]);
 			
-			if (state>0)
-			{
-				for (int i=0; i<state; i++)
-					lineRGBA(s,p_wii[i].x,p_wii[i].y,
-							   p_wii[i+1].x,p_wii[i+1].y,
-							   255,255,255,255);
-			}
+// 			if (state>0)
+// 			{
+// 				for (int i=0; i<state; i++)
+// 					lineRGBA(s,p_wii[i].x,p_wii[i].y,
+// 							   p_wii[i+1].x,p_wii[i+1].y,
+// 							   255,255,255,255);
+// 			}
 
 			if ((state<4)) 
 				draw_square(&p_screen[state]);
