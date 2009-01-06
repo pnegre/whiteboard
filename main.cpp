@@ -56,9 +56,9 @@ int main(int argc,char *argv[])
 
 		return 0;
 	}
-	catch (Wiimote::ErrorConnection)
+	catch (Wiimote::Error)
 	{
-		std::cout << "There was a problem connecting to the wiimote(s)\n";
+		std::cout << "Wiimote Error\n";
 		return 1;
 	}
 	catch (Calibration::Error)

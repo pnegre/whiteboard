@@ -53,7 +53,9 @@ class Wiimote
 	
 	public:
 		
-	class ErrorConnection {};
+	class Error {};
+	class ErrorConnection: public Error {};
+	class ErrorOther: public Error {};
 
 	Wiimote();
 	bool connection();

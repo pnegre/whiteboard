@@ -34,6 +34,7 @@ void Wiimote::setLedState(cwiid_wiimote_t *wiimote, unsigned char led_state)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_LED, led_state)) {
 		fprintf(stderr, "Error setting LEDs \n");
+		throw ErrorOther();
 	}
 }
 	
@@ -41,6 +42,7 @@ void Wiimote::setRptMode(cwiid_wiimote_t *wiimote, unsigned char rpt_mode)
 {
 	if (cwiid_command(wiimote, CWIID_CMD_RPT_MODE, rpt_mode)) {
 		fprintf(stderr, "Error setting report mode\n");
+		throw ErrorOther();
 	}
 }
 
