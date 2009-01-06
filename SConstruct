@@ -1,22 +1,22 @@
-
-
 env = Environment()
 env.Append(CCFLAGS = '-g')
 
-#deps = (
-#	'cairomm-1.0',
-#	'sigc-2.0',
-#	'gtkmm-2.4',
-#	'libglademm-2.4',
-#	'Xtst',
-#	'gthread-2.0'
-#)
-#
-#conf = Configure(env)
-#for l in deps:
-#	#if not conf.CheckLib(l): exit(1)
-#	conf.CheckLib(l)
-#env = conf.Finish()
+# We should check that gcc and g++ are installed
+# HOW ??
+
+# We should check that 'pkg-config' is installed also
+
+deps = (
+	'Xtst',
+	'SDL',
+	'cwiid'
+)
+
+conf = Configure(env)
+for l in deps:
+	if not conf.CheckLib(l): exit(1)
+
+env = conf.Finish()
 
 
 libs = (
