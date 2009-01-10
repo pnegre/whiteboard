@@ -18,7 +18,7 @@ To run:
 
 	$ whiteboard
 
-Make sure that you have bluetooth working. Tested in Debian testing and Ubuntu
+Make sure that you have bluetooth working. Tested in Debian Lenny and Ubuntu
 Intrepid Ibex.
 
 
