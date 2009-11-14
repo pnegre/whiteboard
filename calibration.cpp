@@ -29,6 +29,74 @@
 namespace Calibration
 {
 	SDL_Surface *s;
+	
+	
+	#define MAXTICKS  1500
+	#define READY     1
+	#define FINISHED  2
+	#define FINISHED2 3
+	class SandClock
+	{
+		public:
+		
+		int total_ticks, last_tick;
+		Point point;
+		int state;
+		
+		void init()
+		{
+			total_ticks = 0;
+			last_tick = 0;
+			state = READY;
+		}
+		
+		void draw(SDL_Surface *s, int x, int y)
+		{
+			int dgrs = 360*total_ticks/MAXTICKS;
+			if (dgrs > 359)
+				dgrs = 359;
+			arcRGBA(s, x,y, 80, 0,dgrs, 100,100,100,255); 
+		}
+		
+		void update( Point *p)
+		{			
+			int ct = SDL_GetTicks();
+			int delta = (last_tick == 0) ? 0 : ct - last_tick;
+			
+			if (p == 0)
+			{
+				if (delta > 100)
+				{
+					if (state == FINISHED)
+						state = FINISHED2;
+					if (delta > 150)
+						init();
+				}
+				return;
+			}
+			
+			point = *p;
+			last_tick = ct;
+			if (total_ticks < MAXTICKS)
+				total_ticks += delta;
+			else
+				state = FINISHED;
+		}
+		
+		bool finished()
+		{
+			return (state == FINISHED2);
+		}
+		
+		Point get_point()
+		{
+			return point;
+		}
+		
+	};
+	
+	
+	
 
 	void draw_point(Point *p)
 	{
@@ -60,6 +128,8 @@ namespace Calibration
 		int i;
 		int t=0;
 		float xm1,ym1,xm2,ym2;
+		
+		SandClock sandClock;
 		
 		int SIZEX = Scr::getScreenWidth();
 		int SIZEY = Scr::getScreenHeight();
@@ -94,20 +164,32 @@ namespace Calibration
 		Point wiiP;
 		wiiP.x = wiiP.y = 0;
 		t = 0;
+		sandClock.init();
 		while(1)
 		{
-			if (w.getMsgs())
-				wiiP = w.getPos();
- 			else
+			if (!w.getMsgs())
  				SDL_Delay(50);
+			
+			if (w.dataReady())
+			{
+				wiiP = w.getPos();
+				sandClock.update(&wiiP);
+			}
+			else
+				sandClock.update(0);
 			
 			SDL_PollEvent(&e);
 			k = SDL_GetKeyState(NULL);
 			if (k[SDLK_ESCAPE]) { ok=0; break; }
 
-			if (k[SDLK_SPACE]) { state++; k[SDLK_SPACE]=0; }
+			if (sandClock.finished()) 
+			{
+				p_wii[state] = sandClock.get_point();
+				state++; 
+				sandClock.init(); 
+			}
 
-			if (state < 4) { p_wii[state] = wiiP; }
+// 			if (state < 4) { p_wii[state] = wiiP; }
 			
 			if (state >= 4) 
 				break;
@@ -139,7 +221,9 @@ namespace Calibration
 			if ((state<4)) 
 				draw_square(&p_screen[state]);
 
-			t = ~ t; 
+			t = ~ t;
+			
+			sandClock.draw(s, SIZEX/2, SIZEY/2);
 
 			SDL_Flip(s);
 			//SDL_Delay(100);
