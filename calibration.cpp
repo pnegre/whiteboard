@@ -33,8 +33,8 @@ namespace Calibration
 	
 	#define MAXTICKS  1500
 	#define READY     1
-	#define FINISHED  2
-	#define FINISHED2 3
+	#define FIN1      2
+	#define FIN2      3
 	class SandClock
 	{
 		public:
@@ -55,7 +55,8 @@ namespace Calibration
 			int dgrs = 360*total_ticks/MAXTICKS;
 			if (dgrs > 359)
 				dgrs = 359;
-			arcRGBA(s, x,y, 80, 0,dgrs, 100,100,100,255); 
+			if (dgrs > 0)
+				filledPieRGBA(s, x,y, 30, 0,dgrs, 255,0,0,255); 
 		}
 		
 		void update( Point *p)
@@ -67,8 +68,8 @@ namespace Calibration
 			{
 				if (delta > 100)
 				{
-					if (state == FINISHED)
-						state = FINISHED2;
+					if (state == FIN1)
+						state = FIN2;
 					if (delta > 150)
 						init();
 				}
@@ -80,12 +81,12 @@ namespace Calibration
 			if (total_ticks < MAXTICKS)
 				total_ticks += delta;
 			else
-				state = FINISHED;
+				state = FIN1;
 		}
 		
 		bool finished()
 		{
-			return (state == FINISHED2);
+			return (state == FIN2);
 		}
 		
 		Point get_point()
