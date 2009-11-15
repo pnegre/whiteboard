@@ -1,5 +1,12 @@
+import installer
+
 env = Environment()
 env.Append(CCFLAGS = '-g')
+
+opts = Options( 'options.conf', ARGUMENTS )
+installer.AddOptions( opts )
+opts.Update( env )
+install = installer.Installer( env )
 
 # We should check that gcc and g++ are installed
 # HOW ??
@@ -29,6 +36,8 @@ for l in libs:
 	env.ParseConfig('pkg-config ' + l + ' --cflags --libs')
 
 
-env.Program('whiteboard', Glob('*.c*'))
+whiteboard = env.Program('whiteboard', Glob('*.c*'))
+install.AddProgram(whiteboard)
+
 
 
