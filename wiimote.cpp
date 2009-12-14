@@ -122,12 +122,14 @@ bool Wiimote::getMsgs()
 			if (validData)
 			{
 				irData(p);
+				free(mesg);
 				return true;
 			}
 			break;
 			
 		case CWIID_MESG_ERROR:
 			endConnection();
+			free(mesg);
 			throw ErrorMsg();
 			
 		default:
@@ -135,6 +137,7 @@ bool Wiimote::getMsgs()
 		}
 	}
 	
+	free(mesg);
 	if (msg_count)
 		return true;	
 }
